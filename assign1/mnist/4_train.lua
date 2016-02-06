@@ -29,8 +29,11 @@ if not opt then
    cmd:option('-save', 'results', 'subdirectory to save/log experiments in')
    cmd:option('-visualize', false, 'visualize input data and weights during training')
    cmd:option('-plot', false, 'live plot')
-   cmd:option('-optimization', 'SGD', 'optimization method: SGD | ASGD | CG | LBFGS')
+   cmd:option('-optimization', 'ADAM', 'optimization method: SGD | ASGD | CG | LBFGS | ADAM')
    cmd:option('-learningRate', 1e-3, 'learning rate at t=0')
+   cmd:option('-beta1', 0.9, 'beta1 (for Adam)')
+   cmd:option('-beta2', 0.999, 'beta2 (for Adam)')
+   cmd:option('-epsilon', 1e-8, 'epsilon (for Adam)')
    cmd:option('-batchSize', 1, 'mini-batch size (1 = pure stochastic)')
    cmd:option('-weightDecay', 0, 'weight decay (SGD only)')
    cmd:option('-momentum', 0, 'momentum (SGD only)')
@@ -99,6 +102,15 @@ elseif opt.optimization == 'ASGD' then
       t0 = trsize * opt.t0
    }
    optimMethod = optim.asgd
+
+elseif opt.optimization == 'ADAM' then
+   optimState = {
+      learningRate = opt.learningRate,
+      beta1 = opt.beta1,
+      beta2 = opt.beta2,
+      epsilon = opt.epsilon
+   }
+   optimMethod = optim.adam
 
 else
    error('unknown optimization method')
