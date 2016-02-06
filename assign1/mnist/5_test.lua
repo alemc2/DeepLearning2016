@@ -63,7 +63,11 @@ function test()
       -- restore parameters
       parameters:copy(cachedparams)
    end
-   
+
+   retVal = confusion.averageUnionValid
+
    -- next iteration:
    confusion:zero()
+
+   return retVal
 end

@@ -42,11 +42,14 @@ cmd:option('-learningRate', 1e-3, 'learning rate at t=0')
 cmd:option('-beta1', 0.9, 'beta1 (for Adam)')
 cmd:option('-beta2', 0.999, 'beta2 (for Adam)')
 cmd:option('-epsilon', 1e-8, 'epsilon (for Adam)')
-cmd:option('-batchSize', 1, 'mini-batch size (1 = pure stochastic)')
+cmd:option('-batchSize', 16, 'mini-batch size (1 = pure stochastic)')
 cmd:option('-weightDecay', 0, 'weight decay (SGD only)')
 cmd:option('-momentum', 0, 'momentum (SGD only)')
 cmd:option('-t0', 1, 'start averaging at t0 (ASGD only), in nb of epochs')
 cmd:option('-maxIter', 2, 'maximum nb of iterations for CG and LBFGS')
+cmd:option('-patience', 3, 'minimum number of epochs to train for')
+cmd:option('-improvementThreshold', 0.995, 'amount to multiply test accuracy to to determine significant improvement')
+cmd:option('-patienceIncrease', 2, 'amount to multiply patience by on significant improvement')
 cmd:option('-type', 'cuda', 'type: double | float | cuda') -- XXX: use double for final submission
 cmd:text()
 opt = cmd:parse(arg or {})
@@ -75,7 +78,41 @@ dofile '5_test.lua'
 ----------------------------------------------------------------------
 print '==> training!'
 
+bestAcc = 0.0
+bestModel = model
+patience = opt.patience
+improvementThreshold = opt.improvementThreshold
+patienceIncrease = opt.patienceIncrease
+
 while true do
    train()
-   test()
+   acc = test()
+   print(acc)
+
+   if acc > bestAcc then
+      print '==> found new best model!'
+      if acc * improvementThreshold > bestAcc then
+         local old_p = patience
+         patience = math.max(patience, patienceIncrease * (epoch-1))
+         print('==> increasing patience from ' .. old_p .. ' to ' .. patience)
+      else
+         print '==> not a significant improvement'
+      end
+
+      bestAcc = acc
+      bestModel = model:clone()
+   end
+
+   if patience <= (epoch-1) then
+      print '==> out of patience'
+      break
+   else
+      print('==> patience: ' .. patience)
+   end
 end
+
+model = bestModel
+local filename = paths.concat(opt.save, 'model.net')
+os.execute('mkdir -p ' .. sys.dirname(filename))
+print('==> saving final model to '..filename)
+torch.save(filename, model)
