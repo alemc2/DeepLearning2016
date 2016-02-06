@@ -36,7 +36,7 @@ I assume you know how to print .ps files (``lpr -Pprinter ps#.ps'')
 %
 \title{Deep Learning}
 \documentclass[11pt]{article}
-\usepackage{amsfonts,amsmath}
+\usepackage{amsfonts,amsmath,physics}
 \usepackage{latexsym, graphicx}
 \usepackage{amssymb}
 \usepackage{mathtools}
@@ -78,16 +78,17 @@ I assume you know how to print .ps files (``lpr -Pprinter ps#.ps'')
 \newcommand{\increase}{\addtocounter{pppp}{1}}  %problem number
 
 %first argument desription, second number of points
-\newcommand{\newproblem}{
+\newcommand{\newproblem}[1]{
 \ifnum\me=0
 \ifnum\prob>0 \newpage \fi
 \increase
 \setcounter{page}{1}
 \handout{\name, Assignment \num, Section \arabic{pppp}}{\today}{Team: \name}{Due:
-\due}{Solutions to Section \prob\ of Assignment \num}
+\due}{Solutions to Assignment \num}
+\section*{Problem \prob~ - #1 \hfill}
 \else
 \increase
-\section*{Section \num}
+\section*{Problem \num-\prob~ - #1 \hfill}
 \fi
 }
 
@@ -98,7 +99,7 @@ I assume you know how to print .ps files (``lpr -Pprinter ps#.ps'')
 \def\squarebox#1{\hbox to #1{\hfill\vbox to #1{\vfill}}}
 \def\qed{\hspace*{\fill}
         \vbox{\hrule\hbox{\vrule\squarebox{.667em}\vrule}\hrule}}
-\newenvironment{solution}{\begin{trivlist}\item[]}
+\newenvironment{solution}{\begin{trivlist}\item[]{\bf Solution:}}
                       {\qed \end{trivlist}}
 \newenvironment{solsketch}{\begin{trivlist}\item[]{\bf Solution Sketch:}}
                       {\qed \end{trivlist}}
@@ -130,8 +131,8 @@ I assume you know how to print .ps files (``lpr -Pprinter ps#.ps'')
 \DeclareMathOperator*{\ORA}{\vee}
 \newcommand{\R}{\mathbb{R}}
 
-\DeclarePairedDelimiter{\abs}{\lvert}{\rvert}
-\DeclarePairedDelimiter{\norm}{\lVert}{\rVert}
+%\DeclarePairedDelimiter{\abs}{\lvert}{\rvert}
+%\DeclarePairedDelimiter{\norm}{\lVert}{\rVert}
 \DeclarePairedDelimiter{\inprod}{\langle}{\rangle}
 
 \newcommand\Perm[2][n]{\prescript{#1\mkern-2.5mu}{}P_{#2}}
@@ -139,39 +140,81 @@ I assume you know how to print .ps files (``lpr -Pprinter ps#.ps'')
 \newcommand{\AND}{\wedge}
 \newcommand{\OR}{\vee}
 
+\newcommand{\mexp}{\mathrm{e}}
+
 
 \begin{document}
 
 
-\newproblem
+\newproblem{Backpropagation}
 
 
-\begin{itemize}
+\begin{enumerate}
 
-\item[1.]
+\item Warmup: Logistic regression is a pretty popular technique in machine learning to
+classify data into two categories. This technique builds over linear regression by using
+the same linear model but this is followed by the sigmoid function which converts
+the output of the linear model to a value between 0 and 1. This value can then be
+interpreted as a probability. This is usually represented as:
+\begin{equation}
+P(y=1|x_{in}) = x_{out} = \sigma(x_{in}) = \frac{1}{1+\mexp^{-x_{in}}}
+\end{equation}
+where $x_{in}$ as the name would suggest is the input scalar (which is also the output of
+linear model) and $x_{out}$ is the output scalar.
+\\If the error backpropagated to $x_{out}$ is $\pdv{E}{x_{out}}$
+, write the expression for $\pdv{E}{x_{in}}$ in terms of $\pdv{E}{x_{out}}$.
 
 \ifnum\me<2
 \begin{solution}
-TODO
+\\We know that using the chain rule we can write $\pdv{E}{x_{in}} = \pdv{E}{x_{out}} \pdv{F(x_{in})}{x_{in}}$ where $F(x_{in}) = P(y=1|x_{in})$. Applying this to the above function we get:
+\begin{equation}
+\begin{aligned}
+\pdv{F(x_{in})}{x_{in}} &= \frac{\mexp^2}{(1+\mexp^2)}\\
+\implies \pdv{E}{x_{in}} &= \pdv{E}{x_{out}} \frac{\mexp^2}{(1+\mexp^2)}
+\end{aligned}
+\end{equation}
 \end{solution}
 \fi
 
 
 
-\item[2.]
-
+\item Multinomial logistic regression is a generalization of logistic regression into multiple
+classes. The softmax expression is at the crux of this technique. After receiving $n$
+unconstrained values, the softmax expression normalizes these values to $n$ values that
+all sum to 1. This can then be perceived as probabilities attributed to the various
+classes by a classifier. Your task here is to backpropagate error through this module.
+The softmax expression which indicates the probability of the $i$-th class is as follows:
+\begin{equation}
+P(y=i|X_{in}) = (X_{out})_i = \frac{\mexp^{-\beta (X_{in})_i}}{\sum_k \mexp^{-\beta (X_{in})_k}}
+\end{equation}
+What is the expression for $\pdv{(X_{out})_i}{(X_{in})_j}$? (Hint: Answer differs when $i = j$ and $i \neq j$).
+\\The variables $X_{in}$ and $X_{out}$ aren’t scalars but vectors. While $X_{in}$ represents the $n$
+values input to the system, $X_{out}$ represents the $n$ probabilities output from the system.
+Therefore, the expression $(X_{out})_i$ represents the $i$-th element of $X_{out}$.
 \ifnum\me<2
 \begin{solution}
-TODO
+\\For this we will consider that components of $X_{in}$ are independent of one another. Then using simple product rule of differentiation we get:
+\begin{equation}
+\pdv{(X_{out})_i}{(X_{in})_j} =
+\begin{cases}
+-\beta \frac{\mexp^{-\beta (X_{in})_i}}{\sum_k \mexp^{-\beta (X_{in})_k}}
++ \beta \left( \frac{\mexp^{-\beta (X_{in})_i}}{\sum_k \mexp^{-\beta (X_{in})_k}} \right)^2
+= \beta (X_{out})_i ((X_{out})_i -1)
+&\text{if } i=j\\\\
+\beta \frac{\mexp^{-\beta (X_{in})_i} \cdot \mexp^{-\beta (X_{in})_j}}{\left( \sum_k \mexp^{-\beta (X_{in})_k} \right)^2}
+= \beta (X_{out})_i (X_{out})_j
+&\text{if } i \neq j 
+\end{cases}
+\end{equation}
 \end{solution}
 \fi
 
 
-\end{itemize}
+\end{enumerate}
 
 
 
-\newproblem
+\newproblem{Torch (MNIST Handwritten Digit Recognition)}
 
 \ifnum\me<2
 \begin{itemize}
