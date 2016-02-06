@@ -37,7 +37,7 @@ cmd:option('-loss', 'nll', 'type of loss function to minimize: nll | mse | margi
 -- training:
 cmd:option('-save', 'results', 'subdirectory to save/log experiments in')
 cmd:option('-plot', false, 'live plot')
-cmd:option('-optimization', 'ADAM', 'optimization method: SGD | ASGD | CG | LBFGS | ADAM')
+cmd:option('-optimization', 'ADAM', 'optimization method: SGD | ASGD | CG | LBFGS | ADAM | ADAGRAD | ADADELTA')
 cmd:option('-learningRate', 1e-3, 'learning rate at t=0')
 cmd:option('-beta1', 0.9, 'beta1 (for Adam)')
 cmd:option('-beta2', 0.999, 'beta2 (for Adam)')

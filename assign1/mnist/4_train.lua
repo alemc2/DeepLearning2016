@@ -29,7 +29,7 @@ if not opt then
    cmd:option('-save', 'results', 'subdirectory to save/log experiments in')
    cmd:option('-visualize', false, 'visualize input data and weights during training')
    cmd:option('-plot', false, 'live plot')
-   cmd:option('-optimization', 'ADAM', 'optimization method: SGD | ASGD | CG | LBFGS | ADAM')
+   cmd:option('-optimization', 'ADAM', 'optimization method: SGD | ASGD | CG | LBFGS | ADAM | ADAGRAD | ADADELTA')
    cmd:option('-learningRate', 1e-3, 'learning rate at t=0')
    cmd:option('-beta1', 0.9, 'beta1 (for Adam)')
    cmd:option('-beta2', 0.999, 'beta2 (for Adam)')
@@ -111,6 +111,19 @@ elseif opt.optimization == 'ADAM' then
       epsilon = opt.epsilon
    }
    optimMethod = optim.adam
+
+elseif opt.optimization == 'ADAGRAD' then
+   optimState = {
+      learningRate = opt.learningRate,
+   }
+   optimMethod = optim.adagrad
+
+elseif opt.optimization == 'ADADELTA' then
+   optimState = {
+      -- rho = ... interpolation parameter, add if needed
+      -- eps = ... for numerical stability, add if needed
+   }
+   optimMethod = optim.adadelta
 
 else
    error('unknown optimization method')
