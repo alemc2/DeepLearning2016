@@ -29,7 +29,8 @@ cmd:text('Options:')
 cmd:option('-seed', 1, 'fixed input seed for repeatable experiments')
 cmd:option('-threads', 2, 'number of threads')
 -- data:
-cmd:option('-size', 'full', 'how many samples do we load: small | full')
+cmd:option('-size', 'valid', 'how many samples do we load: small | full | valid') -- XXX: use full for final submission
+cmd:option('-bucket', true, 'bucket training data')
 -- model:
 cmd:option('-model', 'convnet', 'type of model to construct: linear | mlp | convnet')
 -- loss:

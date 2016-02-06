@@ -23,7 +23,8 @@ if not opt then
    cmd:text('MNIST Dataset Preprocessing')
    cmd:text()
    cmd:text('Options:')
-   cmd:option('-size', 'small', 'how many samples do we load: small | full')
+   cmd:option('-size', 'valid', 'how many samples do we load: small | full | valid')
+   cmd:option('-bucket', true, 'bucket training data')
    cmd:option('-visualize', true, 'visualize input data and weights during training')
    cmd:text()
    opt = cmd:parse(arg or {})
@@ -56,22 +57,40 @@ elseif opt.size == 'small' then
    print '==> using reduced training data, for fast experiments'
    trsize = 6000
    tesize = 1000
+elseif opt.size == 'valid' then -- Make sure trsize + tesize <= full trsize
+   print '==> using reduced training data, with part of that as test/validation data'
+   trsize = 6000
+   tesize = 1000
 end
 
 ----------------------------------------------------------------------
 print '==> loading dataset'
 
 loaded = torch.load(train_file, 'ascii')
+
+if opt.bucket then
+   print '==> bucketing the training data'
+   -- TODO bucket training data
+end
+
 trainData = {
-   data = loaded.data,
-   labels = loaded.labels,
+   data = loaded.data[{ {1,trsize}, {}, {}, {} }],
+   labels = loaded.labels[{ {1,trsize} }],
    size = function() return trsize end
 }
 
-loaded = torch.load(test_file, 'ascii')
+if opt.size == 'valid' then
+   test_data = loaded.data[{ {60000-tesize+1,60000}, {}, {}, {} }]
+   test_labels = loaded.labels[{ {60000-tesize+1,60000} }]
+else
+   loaded = torch.load(test_file, 'ascii')
+   test_data = loaded.data[{ {1,tesize}, {}, {}, {} }]
+   test_labels = loaded.labels[{ {1,tesize} }]
+end
+
 testData = {
-   data = loaded.data,
-   labels = loaded.labels,
+   data = test_data,
+   labels = test_labels,
    size = function() return tesize end
 }
 
