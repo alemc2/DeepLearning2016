@@ -48,7 +48,7 @@ cmd:option('-momentum', 0, 'momentum (SGD only)')
 cmd:option('-t0', 1, 'start averaging at t0 (ASGD only), in nb of epochs')
 cmd:option('-maxIter', 2, 'maximum nb of iterations for CG and LBFGS')
 cmd:option('-patience', 3, 'minimum number of epochs to train for')
-cmd:option('-improvementThreshold', 0.995, 'amount to multiply test accuracy to to determine significant improvement')
+cmd:option('-improvementThreshold', 0.995, 'amount to multiply test accuracy to determine significant improvement')
 cmd:option('-patienceIncrease', 2, 'amount to multiply patience by on significant improvement')
 cmd:option('-type', 'cuda', 'type: double | float | cuda') -- XXX: use double for final submission
 cmd:text()
