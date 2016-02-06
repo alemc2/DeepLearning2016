@@ -64,7 +64,7 @@ function test()
       parameters:copy(cachedparams)
    end
 
-   retVal = confusion.averageUnionValid
+   retVal = confusion.averageValid
 
    -- next iteration:
    confusion:zero()
