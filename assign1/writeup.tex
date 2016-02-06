@@ -165,14 +165,14 @@ linear model) and $x_{out}$ is the output scalar.
 , write the expression for $\pdv{E}{x_{in}}$ in terms of $\pdv{E}{x_{out}}$.
 
 \ifnum\me<2
-\begin{solution}
-\\We know that using the chain rule we can write $\pdv{E}{x_{in}} = \pdv{E}{x_{out}} \pdv{F(x_{in})}{x_{in}}$ where $F(x_{in}) = P(y=1|x_{in})$. Applying this to the above function we get:
-\begin{equation}
-\begin{aligned}
-\pdv{F(x_{in})}{x_{in}} &= \frac{\mexp^2}{(1+\mexp^2)}\\
-\implies \pdv{E}{x_{in}} &= \pdv{E}{x_{out}} \frac{\mexp^2}{(1+\mexp^2)}
-\end{aligned}
-\end{equation}
+\begin{solution}\\
+Using the chain rule, we can write $\pdv{E}{x_{in}}$ as
+\begin{align*}
+\pdv{E}{x_{in}} &= \pdv{E}{x_{out}} \cdot \pdv{P(y=1 | x_{in})}{x_{in}}\\
+&= \pdv{E}{x_{out}} \cdot \pdv{}{x_{in}} \frac{1}{1+\mexp^{-x_{in}}}\\
+&= \pdv{E}{x_{out}} \cdot \frac{\mexp^{-x_{in}}}{(1+\mexp^{-x_{in}})^2}\\
+&= \pdv{E}{x_{out}} \cdot \frac{\mexp^{x_{in}}}{(1+\mexp^{x_{in}})^2} \tag{multiplying numerator and denominator by $\mexp^{2x_{in}}$}
+\end{align*}
 \end{solution}
 \fi
 
@@ -192,20 +192,20 @@ What is the expression for $\pdv{(X_{out})_i}{(X_{in})_j}$? (Hint: Answer differ
 values input to the system, $X_{out}$ represents the $n$ probabilities output from the system.
 Therefore, the expression $(X_{out})_i$ represents the $i$-th element of $X_{out}$.
 \ifnum\me<2
-\begin{solution}
-\\For this we will consider that components of $X_{in}$ are independent of one another. Then using simple product rule of differentiation we get:
-\begin{equation}
+\begin{solution}\\
+Here, we consider the components of $X_{in}$ to be independent of one another. Then, using the product rule of differentiation we get:
+\begin{align*}
 \pdv{(X_{out})_i}{(X_{in})_j} =
 \begin{cases}
 -\beta \frac{\mexp^{-\beta (X_{in})_i}}{\sum_k \mexp^{-\beta (X_{in})_k}}
 + \beta \left( \frac{\mexp^{-\beta (X_{in})_i}}{\sum_k \mexp^{-\beta (X_{in})_k}} \right)^2
-= \beta (X_{out})_i ((X_{out})_i -1)
+= \beta (X_{out})_i \left((X_{out})_i -1\right)
 &\text{if } i=j\\\\
 \beta \frac{\mexp^{-\beta (X_{in})_i} \cdot \mexp^{-\beta (X_{in})_j}}{\left( \sum_k \mexp^{-\beta (X_{in})_k} \right)^2}
 = \beta (X_{out})_i (X_{out})_j
 &\text{if } i \neq j 
 \end{cases}
-\end{equation}
+\end{align*}
 \end{solution}
 \fi
 
