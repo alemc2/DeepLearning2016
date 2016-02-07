@@ -24,7 +24,7 @@ cmd:option('-threads', 2, 'number of threads')
 cmd:option('-type', 'cuda', 'type: double | float | cuda') -- XXX: use double for final submission
 cmd:option('-save', 'results', 'subdirectory to save/log experiments in')
 -- data:
-cmd:option('-size', 'small', 'how many samples do we load: small | full') -- XXX: use full for final submission
+cmd:option('-size', 'full', 'how many samples do we load: small | full')
 cmd:option('-model', 'results/model.net', 'relative path of model file: results/model.net')
 cmd:option('-testset', 'mnist.t7/test_32x32.t7' , 'relative path of test data set : mnist.t7/test_32x32.t7') 
 cmd:option('-output', 'predictions.csv', 'relative path where you want to stor predicitions csv file : predictions.csv')

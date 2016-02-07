@@ -16,6 +16,7 @@
 require 'torch'   -- torch
 require 'xlua'    -- xlua provides useful tools, like progress bars
 require 'optim'   -- an optimization package, for online and batch methods
+require 'image'
 
 ----------------------------------------------------------------------
 -- parse command line arguments
@@ -159,6 +160,8 @@ function train()
       for i = t,math.min(t+opt.batchSize-1,trainData:size()) do
          -- load new sample
          local input = trainData.data[shuffle[i]]
+         image.rotate(input, torch.random(-80,80)/100)
+         image.translate(input, torch.random(-3,2), torch.random(-2,3))
          local target = trainData.labels[shuffle[i]]
          if opt.type == 'double' then input = input:double()
          elseif opt.type == 'cuda' then input = input:cuda() end

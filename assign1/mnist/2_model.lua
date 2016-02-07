@@ -51,7 +51,7 @@ nhiddens = ninputs / 2
 nstates = {64,64,128}
 filtsize = 5
 poolsize = 2
-normkernel = image.gaussian1D(7)
+--normkernel = image.gaussian1D(7)
 
 ----------------------------------------------------------------------
 print '==> construct model'
