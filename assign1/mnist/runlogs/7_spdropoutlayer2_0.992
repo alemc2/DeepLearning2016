@@ -1,0 +1,939 @@
+      -- a typical modern convolution network (conv+relu+pool)
+      model = nn.Sequential()
+
+      -- stage 1 : filter bank -> squashing -> L2 pooling -> normalization
+      model:add(nn.SpatialConvolutionMM(nfeats, nstates[1], filtsize, filtsize))
+      model:add(nn.ReLU())
+      model:add(nn.SpatialMaxPooling(poolsize,poolsize,poolsize,poolsize))
+
+      -- stage 2 : filter bank -> squashing -> L2 pooling -> normalization
+      model:add(nn.SpatialConvolutionMM(nstates[1], nstates[2], filtsize, filtsize))
+      model:add(nn.ReLU())
+      model:add(nn.SpatialDropout(0.5))
+      model:add(nn.SpatialMaxPooling(poolsize,poolsize,poolsize,poolsize))
+
+      -- stage 3 : standard 2-layer neural network
+      model:add(nn.View(nstates[2]*filtsize*filtsize))
+      model:add(nn.Linear(nstates[2]*filtsize*filtsize, nstates[3]))
+      model:add(nn.ReLU())
+      model:add(nn.Linear(nstates[3], noutputs))
+
+
+
+==> processing options	
+==> switching to CUDA	
+==> executing all	
+==> downloading dataset	
+==> using reduced training data, with part of that as test/validation data	
+==> loading dataset	
+==> preprocessing data	
+==> preprocessing data: normalize globally	
+==> verify statistics	
+training data mean: -1.5106435531228e-08	
+training data standard deviation: 1.0000000156287	
+test data mean: 0.012629995727272	
+test data standard deviation: 1.0162751665024	
+==> visualizing data	
+==> define parameters	
+==> construct model	
+==> here is the model:	
+nn.Sequential {
+  [input -> (1) -> (2) -> (3) -> (4) -> (5) -> (6) -> (7) -> (8) -> (9) -> (10) -> (11) -> output]
+  (1): nn.SpatialConvolutionMM(1 -> 64, 5x5)
+  (2): nn.ReLU
+  (3): nn.SpatialMaxPooling(2,2,2,2)
+  (4): nn.SpatialConvolutionMM(64 -> 64, 5x5)
+  (5): nn.ReLU
+  (6): nn.SpatialDropout(0.500000)
+  (7): nn.SpatialMaxPooling(2,2,2,2)
+  (8): nn.View
+  (9): nn.Linear(1600 -> 128)
+  (10): nn.ReLU
+  (11): nn.Linear(128 -> 10)
+}
+==> define loss	
+==> here is the loss function:	
+nn.ClassNLLCriterion
+==> defining some tools	
+==> configuring optimizer	
+==> defining training procedure	
+==> defining test procedure	
+==> training!	
+==> doing epoch on training data:	
+==> online epoch # 1 [batchSize = 16]	
+ [============================================================ 11985/12000 ===========>.] ETA: 13ms | Step: 0ms         
+==> time to learn 1 sample = 0.90310784180959ms	
+ConfusionMatrix:
+[[    1150       0      13       6       3       5       8       7      11       3]   95.357% 	[class: 1]
+ [       1    1274      17      19       5       0       1      10      21       3]   94.301% 	[class: 2]
+ [      12      21    1042      32      13       2       8      26      15       5]   88.605% 	[class: 3]
+ [       7       9      30    1087       3      28       4      23      21      16]   88.518% 	[class: 4]
+ [       5      10      11       7    1061       3      10      16       5      56]   89.611% 	[class: 5]
+ [      15       5       8      36       5     901      18      11      35      14]   85.973% 	[class: 6]
+ [      20       9      11       5       8      10    1132       3       6       4]   93.709% 	[class: 7]
+ [       6      10      18      14       9       2       0    1166       5      49]   91.165% 	[class: 8]
+ [      12      35      24      25      12      29      14      12     935      29]   82.964% 	[class: 9]
+ [      17       8      11      18      41       7       4      48      19    1020]]  85.499% 	[class: 0]
+ + average row correct: 89.570114016533% 
+ + average rowUcol correct (VOC measure): 81.341999769211% 
+ + global correct: 89.733333333333%
+==> saving model to /home/ankit/devel/deeplearning2016/assign1/mnist/results/model.net	
+==> testing on test set:	
+ [================================================================ 2000/2000 ==========>] Tot: 11s702ms | Step: 0ms     
+
+==> time to test 1 sample = 0.42581593990326ms	
+ConfusionMatrix:
+[[     194       0       0       0       0       0       5       0       0       0]   97.487% 	[class: 1]
+ [       0     220       1       0       0       0       0       0       1       0]   99.099% 	[class: 2]
+ [       0       0     180       2       1       0       1       3       4       0]   94.241% 	[class: 3]
+ [       1       0       3     220       0       0       1       0       0       1]   97.345% 	[class: 4]
+ [       0       0       0       0     184       0       0       0       0       1]   99.459% 	[class: 5]
+ [       0       0       0       1       0     173       2       0       0       2]   97.191% 	[class: 6]
+ [       0       0       0       0       0       0     185       0       0       0]   100.000% 	[class: 7]
+ [       0       0       2       0       0       0       0     200       0       2]   98.039% 	[class: 8]
+ [       2       1       2       4       1       3       0       0     191       2]   92.718% 	[class: 9]
+ [       0       0       0       1       0       2       0       0       0     201]]  98.529% 	[class: 0]
+ + average row correct: 97.411004900932% 
+ + average rowUcol correct (VOC measure): 94.940674901009% 
+ + global correct: 97.4%
+0.97411004900932	
+==> found new best model!	
+==> increasing patience from 5 to 5	
+==> patience: 5	
+==> doing epoch on training data:	
+==> online epoch # 2 [batchSize = 16]	
+ [============================================================ 11985/12000 ===========>.] ETA: 13ms | Step: 0ms         
+==> time to learn 1 sample = 0.90550541877747ms	
+ConfusionMatrix:
+[[    1185       0       3       2       1       2       6       1       3       3]   98.259% 	[class: 1]
+ [       0    1313      10       4       4       0       4       6      10       0]   97.187% 	[class: 2]
+ [       1      15    1120      12       3       2       1      13       6       3]   95.238% 	[class: 3]
+ [       4       1      11    1166       0      18       1       9       9       9]   94.951% 	[class: 4]
+ [       1       4       4       0    1146       0       8       3       1      17]   96.791% 	[class: 5]
+ [       2       0       1      13       1    1013       5       1      10       2]   96.660% 	[class: 6]
+ [       4       3       1       1       6       6    1184       0       3       0]   98.013% 	[class: 7]
+ [       2       6      15       7       3       0       0    1227       1      18]   95.934% 	[class: 8]
+ [       3       7       8       4       5       9       7       4    1071       9]   95.031% 	[class: 9]
+ [       2       3       0       7      16       6       0      13       8    1138]]  95.390% 	[class: 0]
+ + average row correct: 96.345445513725% 
+ + average rowUcol correct (VOC measure): 92.95923769474% 
+ + global correct: 96.358333333333%
+==> saving model to /home/ankit/devel/deeplearning2016/assign1/mnist/results/model.net	
+==> testing on test set:	
+ [================================================================ 2000/2000 ==========>] Tot: 11s757ms | Step: 0ms     
+
+==> time to test 1 sample = 0.43836855888367ms	
+ConfusionMatrix:
+[[     197       0       0       0       0       0       2       0       0       0]   98.995% 	[class: 1]
+ [       0     221       0       0       0       0       0       0       1       0]   99.550% 	[class: 2]
+ [       0       0     181       0       2       0       1       3       4       0]   94.764% 	[class: 3]
+ [       1       0       6     218       0       0       1       0       0       0]   96.460% 	[class: 4]
+ [       0       0       0       0     185       0       0       0       0       0]   100.000% 	[class: 5]
+ [       0       0       0       1       0     174       1       0       2       0]   97.753% 	[class: 6]
+ [       0       0       0       0       0       0     185       0       0       0]   100.000% 	[class: 7]
+ [       0       0       2       0       0       0       0     202       0       0]   99.020% 	[class: 8]
+ [       0       0       1       2       0       0       0       0     203       0]   98.544% 	[class: 9]
+ [       0       0       0       3       1       4       0       5       1     190]]  93.137% 	[class: 0]
+ + average row correct: 97.822245955467% 
+ + average rowUcol correct (VOC measure): 95.717222094536% 
+ + global correct: 97.8%
+0.97822245955467	
+==> found new best model!	
+==> increasing patience from 5 to 5	
+==> patience: 5	
+==> doing epoch on training data:	
+==> online epoch # 3 [batchSize = 16]	
+ [============================================================ 11985/12000 ===========>.] ETA: 13ms | Step: 0ms         
+==> time to learn 1 sample = 0.90042515595754ms	
+ConfusionMatrix:
+[[    1190       1       1       0       0       2       7       0       2       3]   98.673% 	[class: 1]
+ [       0    1329       7       2       1       0       2       6       4       0]   98.372% 	[class: 2]
+ [       2       5    1144       5       1       0       2       7       8       2]   97.279% 	[class: 3]
+ [       2       2      11    1191       0      10       1       4       3       4]   96.987% 	[class: 4]
+ [       0       5       2       0    1158       0       1       2       2      14]   97.804% 	[class: 5]
+ [       2       0       1      11       0    1017       7       0       8       2]   97.042% 	[class: 6]
+ [       6       3       0       1       2       8    1184       0       4       0]   98.013% 	[class: 7]
+ [       1       4       5       0       4       0       0    1253       3       9]   97.967% 	[class: 8]
+ [       5       7       7       4       3       7       3       2    1080       9]   95.830% 	[class: 9]
+ [       6       1       0       8      10       3       0      16       7    1142]]  95.725% 	[class: 0]
+ + average row correct: 97.369190454483% 
+ + average rowUcol correct (VOC measure): 94.896275401115% 
+ + global correct: 97.4%
+==> saving model to /home/ankit/devel/deeplearning2016/assign1/mnist/results/model.net	
+==> testing on test set:	
+ [================================================================ 2000/2000 ==========>] Tot: 11s691ms | Step: 0ms     
+
+==> time to test 1 sample = 0.43503201007843ms	
+ConfusionMatrix:
+[[     197       0       0       0       0       0       1       0       0       1]   98.995% 	[class: 1]
+ [       0     221       0       0       0       0       0       0       1       0]   99.550% 	[class: 2]
+ [       0       0     184       0       1       0       1       3       2       0]   96.335% 	[class: 3]
+ [       0       0       8     209       1       0       1       2       0       5]   92.478% 	[class: 4]
+ [       0       0       0       0     184       0       0       0       0       1]   99.459% 	[class: 5]
+ [       0       0       0       0       0     178       0       0       0       0]   100.000% 	[class: 6]
+ [       0       0       0       0       0       0     185       0       0       0]   100.000% 	[class: 7]
+ [       0       0       1       0       0       0       0     202       0       1]   99.020% 	[class: 8]
+ [       0       1       1       0       0       3       0       0     200       1]   97.087% 	[class: 9]
+ [       0       0       0       0       1       1       0       0       0     202]]  99.020% 	[class: 0]
+ + average row correct: 98.194352388382% 
+ + average rowUcol correct (VOC measure): 96.337724924088% 
+ + global correct: 98.1%
+0.98194352388382	
+==> found new best model!	
+==> increasing patience from 5 to 6	
+==> patience: 6	
+==> doing epoch on training data:	
+==> online epoch # 4 [batchSize = 16]	
+ [============================================================ 11985/12000 ===========>.] ETA: 13ms | Step: 0ms         
+==> time to learn 1 sample = 0.90419751405716ms	
+ConfusionMatrix:
+[[    1194       1       1       1       0       1       4       0       1       3]   99.005% 	[class: 1]
+ [       0    1328      12       1       0       1       0       4       3       2]   98.298% 	[class: 2]
+ [       0       9    1143       7       2       0       0       8       5       2]   97.194% 	[class: 3]
+ [       1       1      10    1197       0       8       1       2       3       5]   97.476% 	[class: 4]
+ [       0       0       2       0    1162       0       4       1       1      14]   98.142% 	[class: 5]
+ [       1       1       0       7       0    1019       8       0       9       3]   97.233% 	[class: 6]
+ [       3       0       1       0       3       6    1194       0       1       0]   98.841% 	[class: 7]
+ [       1       2      10       2       3       1       0    1247       3      10]   97.498% 	[class: 8]
+ [       2       4       3       4       0       4       6       0    1098       6]   97.427% 	[class: 9]
+ [       6       2       1       1      11       3       1      10       6    1152]]  96.563% 	[class: 0]
+ + average row correct: 97.767589092255% 
+ + average rowUcol correct (VOC measure): 95.639501810074% 
+ + global correct: 97.783333333333%
+==> saving model to /home/ankit/devel/deeplearning2016/assign1/mnist/results/model.net	
+==> testing on test set:	
+ [================================================================ 2000/2000 ==========>] Tot: 11s741ms | Step: 0ms     
+
+==> time to test 1 sample = 0.43773949146271ms	
+ConfusionMatrix:
+[[     196       0       0       0       0       0       3       0       0       0]   98.492% 	[class: 1]
+ [       0     221       0       0       0       0       0       0       1       0]   99.550% 	[class: 2]
+ [       0       0     182       0       1       0       1       3       4       0]   95.288% 	[class: 3]
+ [       0       0       3     218       0       1       1       1       2       0]   96.460% 	[class: 4]
+ [       0       0       0       0     184       0       0       0       0       1]   99.459% 	[class: 5]
+ [       0       0       0       1       0     175       1       0       1       0]   98.315% 	[class: 6]
+ [       0       0       0       0       0       0     185       0       0       0]   100.000% 	[class: 7]
+ [       0       0       1       0       0       0       0     202       1       0]   99.020% 	[class: 8]
+ [       0       0       1       0       0       0       0       0     205       0]   99.515% 	[class: 9]
+ [       0       0       0       1       0       4       0       1       2     196]]  96.078% 	[class: 0]
+ + average row correct: 98.217681050301% 
+ + average rowUcol correct (VOC measure): 96.465549468994% 
+ + global correct: 98.2%
+0.98217681050301	
+==> found new best model!	
+==> not a significant improvement	
+==> patience: 6	
+==> doing epoch on training data:	
+==> online epoch # 5 [batchSize = 16]	
+ [============================================================ 11985/12000 ===========>.] ETA: 13ms | Step: 0ms         
+==> time to learn 1 sample = 0.9020090897878ms	
+ConfusionMatrix:
+[[    1193       0       0       1       1       0       5       1       2       3]   98.922% 	[class: 1]
+ [       1    1333       5       0       3       0       2       5       2       0]   98.668% 	[class: 2]
+ [       0       6    1155       3       1       0       2       6       3       0]   98.214% 	[class: 3]
+ [       2       2       5    1204       0       4       0       5       5       1]   98.046% 	[class: 4]
+ [       2       1       2       0    1159       0       5       2       0      13]   97.889% 	[class: 5]
+ [       1       0       0       7       0    1028       4       0       5       3]   98.092% 	[class: 6]
+ [       3       2       1       1       3       5    1189       0       3       1]   98.427% 	[class: 7]
+ [       1       2       6       2       2       0       0    1251       3      12]   97.811% 	[class: 8]
+ [       6       1       3       5       1       7       4       1    1090       9]   96.717% 	[class: 9]
+ [       3       1       0       1      11       4       0       7       7    1159]]  97.150% 	[class: 0]
+ + average row correct: 97.993463873863% 
+ + average rowUcol correct (VOC measure): 96.072514653206% 
+ + global correct: 98.008333333333%
+==> saving model to /home/ankit/devel/deeplearning2016/assign1/mnist/results/model.net	
+==> testing on test set:	
+ [================================================================ 2000/2000 ==========>] Tot: 11s713ms | Step: 0ms     
+
+==> time to test 1 sample = 0.43688094615936ms	
+ConfusionMatrix:
+[[     193       0       0       0       1       0       5       0       0       0]   96.985% 	[class: 1]
+ [       0     222       0       0       0       0       0       0       0       0]   100.000% 	[class: 2]
+ [       0       0     179       1       2       0       1       4       4       0]   93.717% 	[class: 3]
+ [       0       0       1     223       0       1       0       0       1       0]   98.673% 	[class: 4]
+ [       0       0       0       0     185       0       0       0       0       0]   100.000% 	[class: 5]
+ [       0       0       0       1       0     176       0       0       1       0]   98.876% 	[class: 6]
+ [       0       0       0       0       0       0     185       0       0       0]   100.000% 	[class: 7]
+ [       0       0       1       0       0       0       0     203       0       0]   99.510% 	[class: 8]
+ [       0       1       1       0       0       1       0       0     202       1]   98.058% 	[class: 9]
+ [       1       0       0       1       0       0       0       0       0     202]]  99.020% 	[class: 0]
+ + average row correct: 98.483883738518% 
+ + average rowUcol correct (VOC measure): 97.015595436096% 
+ + global correct: 98.5%
+0.98483883738518	
+==> found new best model!	
+==> increasing patience from 6 to 10	
+==> patience: 10	
+==> doing epoch on training data:	
+==> online epoch # 6 [batchSize = 16]	
+ [============================================================ 11985/12000 ===========>.] ETA: 13ms | Step: 0ms         
+==> time to learn 1 sample = 0.90148333708445ms	
+ConfusionMatrix:
+[[    1194       1       1       1       0       1       5       0       2       1]   99.005% 	[class: 1]
+ [       0    1336       6       2       0       0       0       2       4       1]   98.890% 	[class: 2]
+ [       2       6    1156       3       1       0       0       7       1       0]   98.299% 	[class: 3]
+ [       0       2       2    1206       0       5       0       5       4       4]   98.208% 	[class: 4]
+ [       0       2       0       0    1171       0       0       4       0       7]   98.902% 	[class: 5]
+ [       3       0       1       2       1    1033       3       1       2       2]   98.569% 	[class: 6]
+ [       6       1       0       0       0       1    1197       0       3       0]   99.089% 	[class: 7]
+ [       0       2       4       2       2       1       0    1257       0      11]   98.280% 	[class: 8]
+ [       2       3       2       2       0       2       3       1    1107       5]   98.225% 	[class: 9]
+ [       2       1       2       3       9       2       1       9       3    1161]]  97.318% 	[class: 0]
+ + average row correct: 98.478557467461% 
+ + average rowUcol correct (VOC measure): 97.016513943672% 
+ + global correct: 98.483333333333%
+==> saving model to /home/ankit/devel/deeplearning2016/assign1/mnist/results/model.net	
+==> testing on test set:	
+ [================================================================ 2000/2000 ==========>] Tot: 11s700ms | Step: 0ms     
+
+==> time to test 1 sample = 0.4342565536499ms	
+ConfusionMatrix:
+[[     199       0       0       0       0       0       0       0       0       0]   100.000% 	[class: 1]
+ [       0     218       2       0       0       0       0       0       2       0]   98.198% 	[class: 2]
+ [       0       0     184       1       0       0       1       3       2       0]   96.335% 	[class: 3]
+ [       0       0       3     222       0       0       1       0       0       0]   98.230% 	[class: 4]
+ [       0       0       0       0     184       0       0       0       0       1]   99.459% 	[class: 5]
+ [       0       0       0       1       0     174       1       0       1       1]   97.753% 	[class: 6]
+ [       0       0       0       0       0       0     185       0       0       0]   100.000% 	[class: 7]
+ [       0       0       1       3       0       0       0     199       0       1]   97.549% 	[class: 8]
+ [       0       0       2       0       0       0       0       0     203       1]   98.544% 	[class: 9]
+ [       0       0       0       1       0       0       0       0       2     201]]  98.529% 	[class: 0]
+ + average row correct: 98.459775447845% 
+ + average rowUcol correct (VOC measure): 97.004172801971% 
+ + global correct: 98.45%
+0.98459775447845	
+==> patience: 10	
+==> doing epoch on training data:	
+==> online epoch # 7 [batchSize = 16]	
+ [============================================================ 11985/12000 ===========>.] ETA: 13ms | Step: 0ms         
+==> time to learn 1 sample = 0.9010137518247ms	
+ConfusionMatrix:
+[[    1197       1       0       0       0       1       4       0       3       0]   99.254% 	[class: 1]
+ [       0    1338       4       1       1       0       1       3       1       2]   99.038% 	[class: 2]
+ [       0       4    1164       5       0       0       0       2       1       0]   98.980% 	[class: 3]
+ [       3       1       5    1205       0       7       0       2       3       2]   98.127% 	[class: 4]
+ [       0       2       1       0    1166       0       2       1       1      11]   98.480% 	[class: 5]
+ [       0       0       0       7       1    1028       5       0       5       2]   98.092% 	[class: 6]
+ [       2       0       0       1       0       3    1199       0       3       0]   99.255% 	[class: 7]
+ [       0       2       4       1       2       0       0    1266       0       4]   98.984% 	[class: 8]
+ [       2       2       3       3       2       5       0       1    1107       2]   98.225% 	[class: 9]
+ [       2       0       1       2      12       3       0       4       2    1167]]  97.821% 	[class: 0]
+ + average row correct: 98.625398874283% 
+ + average rowUcol correct (VOC measure): 97.290970087051% 
+ + global correct: 98.641666666667%
+==> saving model to /home/ankit/devel/deeplearning2016/assign1/mnist/results/model.net	
+==> testing on test set:	
+ [================================================================ 2000/2000 ==========>] Tot: 11s696ms | Step: 0ms     
+
+==> time to test 1 sample = 0.43530309200287ms	
+ConfusionMatrix:
+[[     199       0       0       0       0       0       0       0       0       0]   100.000% 	[class: 1]
+ [       1     221       0       0       0       0       0       0       0       0]   99.550% 	[class: 2]
+ [       1       1     179       0       2       0       1       3       4       0]   93.717% 	[class: 3]
+ [       1       0       4     218       0       1       0       1       0       1]   96.460% 	[class: 4]
+ [       0       0       0       0     185       0       0       0       0       0]   100.000% 	[class: 5]
+ [       0       0       0       1       0     177       0       0       0       0]   99.438% 	[class: 6]
+ [       1       0       0       0       1       1     182       0       0       0]   98.378% 	[class: 7]
+ [       0       0       3       0       0       0       0     201       0       0]   98.529% 	[class: 8]
+ [       1       0       1       0       0       2       0       0     202       0]   98.058% 	[class: 9]
+ [       3       0       0       0       3       1       0       0       9     188]]  92.157% 	[class: 0]
+ + average row correct: 97.628811001778% 
+ + average rowUcol correct (VOC measure): 95.32321870327% 
+ + global correct: 97.6%
+0.97628811001778	
+==> patience: 10	
+==> doing epoch on training data:	
+==> online epoch # 8 [batchSize = 16]	
+ [============================================================ 11985/12000 ===========>.] ETA: 13ms | Step: 0ms         
+==> time to learn 1 sample = 0.90140666564306ms	
+ConfusionMatrix:
+[[    1192       1       0       2       0       1       5       0       3       2]   98.839% 	[class: 1]
+ [       1    1339       3       1       1       0       1       3       2       0]   99.112% 	[class: 2]
+ [       1       2    1157       2       3       0       1       8       1       1]   98.384% 	[class: 3]
+ [       0       0       2    1212       0       5       0       3       3       3]   98.697% 	[class: 4]
+ [       0       3       2       0    1166       1       3       1       1       7]   98.480% 	[class: 5]
+ [       0       0       0       2       0    1036       4       0       4       2]   98.855% 	[class: 6]
+ [       3       2       1       0       3       4    1194       0       1       0]   98.841% 	[class: 7]
+ [       0       3       5       3       2       1       0    1254       2       9]   98.045% 	[class: 8]
+ [       3       1       3       4       1       2       1       0    1107       5]   98.225% 	[class: 9]
+ [       3       1       0       1       3       2       0       7       2    1174]]  98.407% 	[class: 0]
+ + average row correct: 98.588618636131% 
+ + average rowUcol correct (VOC measure): 97.21463739872% 
+ + global correct: 98.591666666667%
+==> saving model to /home/ankit/devel/deeplearning2016/assign1/mnist/results/model.net	
+==> testing on test set:	
+ [================================================================ 2000/2000 ==========>] Tot: 11s698ms | Step: 0ms     
+
+==> time to test 1 sample = 0.43400394916534ms	
+ConfusionMatrix:
+[[     199       0       0       0       0       0       0       0       0       0]   100.000% 	[class: 1]
+ [       0     222       0       0       0       0       0       0       0       0]   100.000% 	[class: 2]
+ [       0       0     188       0       1       0       1       0       1       0]   98.429% 	[class: 3]
+ [       0       0       3     220       0       1       0       0       1       1]   97.345% 	[class: 4]
+ [       0       0       0       0     184       0       0       1       0       0]   99.459% 	[class: 5]
+ [       0       0       0       1       0     176       0       0       1       0]   98.876% 	[class: 6]
+ [       0       0       0       0       0       0     185       0       0       0]   100.000% 	[class: 7]
+ [       0       0       1       1       0       0       0     202       0       0]   99.020% 	[class: 8]
+ [       0       0       1       1       0       1       0       0     203       0]   98.544% 	[class: 9]
+ [       1       0       0       0       5       1       0       0       2     195]]  95.588% 	[class: 0]
+ + average row correct: 98.72618496418% 
+ + average rowUcol correct (VOC measure): 97.439031600952% 
+ + global correct: 98.7%
+0.9872618496418	
+==> found new best model!	
+==> increasing patience from 10 to 16	
+==> patience: 16	
+==> doing epoch on training data:	
+==> online epoch # 9 [batchSize = 16]	
+ [============================================================ 11985/12000 ===========>.] ETA: 13ms | Step: 0ms         
+==> time to learn 1 sample = 0.89989217122396ms	
+ConfusionMatrix:
+[[    1197       1       1       0       0       2       3       0       2       0]   99.254% 	[class: 1]
+ [       0    1343       3       1       0       0       1       1       2       0]   99.408% 	[class: 2]
+ [       1       3    1158       1       1       0       0       6       4       2]   98.469% 	[class: 3]
+ [       1       1       2    1213       0       5       0       3       0       3]   98.779% 	[class: 4]
+ [       0       2       3       0    1169       0       1       2       0       7]   98.733% 	[class: 5]
+ [       3       0       1       5       0    1032       3       0       4       0]   98.473% 	[class: 6]
+ [       3       1       0       0       1       1    1202       0       0       0]   99.503% 	[class: 7]
+ [       0       0       7       2       3       0       0    1261       0       6]   98.593% 	[class: 8]
+ [       2       0       3       1       1       5       2       0    1109       4]   98.403% 	[class: 9]
+ [       2       0       0       3       8       0       0       7       3    1170]]  98.072% 	[class: 0]
+ + average row correct: 98.768674731255% 
+ + average rowUcol correct (VOC measure): 97.575352191925% 
+ + global correct: 98.783333333333%
+==> saving model to /home/ankit/devel/deeplearning2016/assign1/mnist/results/model.net	
+==> testing on test set:	
+ [================================================================ 2000/2000 ==========>] Tot: 11s669ms | Step: 0ms     
+
+==> time to test 1 sample = 0.42902410030365ms	
+ConfusionMatrix:
+[[     199       0       0       0       0       0       0       0       0       0]   100.000% 	[class: 1]
+ [       0     221       0       0       0       0       0       0       1       0]   99.550% 	[class: 2]
+ [       0       0     184       0       1       0       1       4       1       0]   96.335% 	[class: 3]
+ [       0       0       2     222       0       0       0       0       1       1]   98.230% 	[class: 4]
+ [       0       0       0       0     185       0       0       0       0       0]   100.000% 	[class: 5]
+ [       0       0       0       2       0     175       0       0       1       0]   98.315% 	[class: 6]
+ [       0       0       0       0       1       0     184       0       0       0]   99.459% 	[class: 7]
+ [       0       0       0       0       0       0       0     204       0       0]   100.000% 	[class: 8]
+ [       0       0       1       1       0       0       0       0     203       1]   98.544% 	[class: 9]
+ [       1       0       0       0       0       0       0       0       1     202]]  99.020% 	[class: 0]
+ + average row correct: 98.945207595825% 
+ + average rowUcol correct (VOC measure): 97.935166954994% 
+ + global correct: 98.95%
+0.98945207595825	
+==> found new best model!	
+==> increasing patience from 16 to 18	
+==> patience: 18	
+==> doing epoch on training data:	
+==> online epoch # 10 [batchSize = 16]	
+ [============================================================ 11985/12000 ===========>.] ETA: 13ms | Step: 0ms         
+==> time to learn 1 sample = 0.90050184726715ms	
+ConfusionMatrix:
+[[    1200       0       0       0       0       0       3       0       0       3]   99.502% 	[class: 1]
+ [       0    1344       0       1       1       0       0       2       1       2]   99.482% 	[class: 2]
+ [       0       2    1165       1       2       0       0       4       2       0]   99.065% 	[class: 3]
+ [       0       0       3    1212       0       6       0       4       1       2]   98.697% 	[class: 4]
+ [       0       0       2       0    1177       0       1       0       0       4]   99.409% 	[class: 5]
+ [       1       0       0       7       0    1033       1       0       3       3]   98.569% 	[class: 6]
+ [       2       0       0       1       1       0    1201       0       3       0]   99.421% 	[class: 7]
+ [       1       2       4       2       1       0       0    1263       2       4]   98.749% 	[class: 8]
+ [       0       2       2       2       1       2       4       1    1109       4]   98.403% 	[class: 9]
+ [       2       1       0       1       3       5       0       4       1    1176]]  98.575% 	[class: 0]
+ + average row correct: 98.987093567848% 
+ + average rowUcol correct (VOC measure): 98.00118625164% 
+ + global correct: 99%
+==> saving model to /home/ankit/devel/deeplearning2016/assign1/mnist/results/model.net	
+==> testing on test set:	
+ [================================================================ 2000/2000 ==========>] Tot: 11s683ms | Step: 0ms     
+
+==> time to test 1 sample = 0.43201196193695ms	
+ConfusionMatrix:
+[[     198       0       0       0       0       1       0       0       0       0]   99.497% 	[class: 1]
+ [       0     221       0       0       0       1       0       0       0       0]   99.550% 	[class: 2]
+ [       0       0     184       0       1       0       0       3       3       0]   96.335% 	[class: 3]
+ [       0       0       3     220       0       2       0       0       1       0]   97.345% 	[class: 4]
+ [       0       0       0       0     184       0       0       0       0       1]   99.459% 	[class: 5]
+ [       0       0       0       1       0     177       0       0       0       0]   99.438% 	[class: 6]
+ [       0       0       0       0       0       1     184       0       0       0]   99.459% 	[class: 7]
+ [       0       0       1       0       0       0       0     203       0       0]   99.510% 	[class: 8]
+ [       0       0       1       0       0       0       0       0     205       0]   99.515% 	[class: 9]
+ [       1       0       0       1       1       0       0       1       4     196]]  96.078% 	[class: 0]
+ + average row correct: 98.618716001511% 
+ + average rowUcol correct (VOC measure): 97.249512672424% 
+ + global correct: 98.6%
+0.98618716001511	
+==> patience: 18	
+==> doing epoch on training data:	
+==> online epoch # 11 [batchSize = 16]	
+ [============================================================ 11985/12000 ===========>.] ETA: 13ms | Step: 0ms         
+==> time to learn 1 sample = 0.90105309089025ms	
+ConfusionMatrix:
+[[    1197       0       2       1       1       1       1       0       2       1]   99.254% 	[class: 1]
+ [       1    1345       3       0       0       0       0       2       0       0]   99.556% 	[class: 2]
+ [       1       5    1163       1       1       0       0       2       2       1]   98.895% 	[class: 3]
+ [       1       0       1    1221       0       1       0       2       0       2]   99.430% 	[class: 4]
+ [       1       2       2       0    1168       0       2       3       0       6]   98.649% 	[class: 5]
+ [       0       0       0       1       0    1040       3       0       2       2]   99.237% 	[class: 6]
+ [       2       0       0       0       2       2    1201       0       1       0]   99.421% 	[class: 7]
+ [       0       0       6       1       4       1       0    1262       1       4]   98.671% 	[class: 8]
+ [       1       2       2       1       1       1       1       1    1114       3]   98.846% 	[class: 9]
+ [       2       0       0       0       6       1       1       3       5    1175]]  98.491% 	[class: 0]
+ + average row correct: 99.044849276543% 
+ + average rowUcol correct (VOC measure): 98.111311793327% 
+ + global correct: 99.05%
+==> saving model to /home/ankit/devel/deeplearning2016/assign1/mnist/results/model.net	
+==> testing on test set:	
+ [================================================================ 2000/2000 ==========>] Tot: 11s691ms | Step: 0ms     
+
+==> time to test 1 sample = 0.43229901790619ms	
+ConfusionMatrix:
+[[     199       0       0       0       0       0       0       0       0       0]   100.000% 	[class: 1]
+ [       0     222       0       0       0       0       0       0       0       0]   100.000% 	[class: 2]
+ [       0       0     187       0       0       0       1       2       1       0]   97.906% 	[class: 3]
+ [       0       0       3     221       0       0       0       0       1       1]   97.788% 	[class: 4]
+ [       0       0       0       0     184       0       0       0       0       1]   99.459% 	[class: 5]
+ [       0       0       0       1       0     177       0       0       0       0]   99.438% 	[class: 6]
+ [       0       0       0       0       0       0     185       0       0       0]   100.000% 	[class: 7]
+ [       0       0       1       0       0       0       0     203       0       0]   99.510% 	[class: 8]
+ [       0       0       1       1       0       0       0       0     203       1]   98.544% 	[class: 9]
+ [       1       0       0       0       1       0       0       0       0     202]]  99.020% 	[class: 0]
+ + average row correct: 99.166413545609% 
+ + average rowUcol correct (VOC measure): 98.338767886162% 
+ + global correct: 99.15%
+0.99166413545609	
+==> found new best model!	
+==> increasing patience from 18 to 22	
+==> patience: 22	
+==> doing epoch on training data:	
+==> online epoch # 12 [batchSize = 16]	
+ [============================================================ 11985/12000 ===========>.] ETA: 13ms | Step: 0ms         
+==> time to learn 1 sample = 0.90024407704671ms	
+ConfusionMatrix:
+[[    1201       0       1       1       0       0       1       0       1       1]   99.585% 	[class: 1]
+ [       0    1347       1       0       0       0       0       0       2       1]   99.704% 	[class: 2]
+ [       1       0    1166       1       1       0       1       4       2       0]   99.150% 	[class: 3]
+ [       0       0       0    1215       0       5       1       4       2       1]   98.941% 	[class: 4]
+ [       0       1       0       0    1172       0       1       3       0       7]   98.986% 	[class: 5]
+ [       0       0       0       9       0    1034       2       0       0       3]   98.664% 	[class: 6]
+ [       3       1       0       0       1       3    1198       0       2       0]   99.172% 	[class: 7]
+ [       0       1       4       2       2       0       0    1264       1       5]   98.827% 	[class: 8]
+ [       2       2       2       2       0       0       2       1    1114       2]   98.846% 	[class: 9]
+ [       2       1       3       1       5       1       0       4       1    1175]]  98.491% 	[class: 0]
+ + average row correct: 99.036806225777% 
+ + average rowUcol correct (VOC measure): 98.103986382484% 
+ + global correct: 99.05%
+==> saving model to /home/ankit/devel/deeplearning2016/assign1/mnist/results/model.net	
+==> testing on test set:	
+ [================================================================ 2000/2000 ==========>] Tot: 11s678ms | Step: 0ms     
+
+==> time to test 1 sample = 0.43123400211334ms	
+ConfusionMatrix:
+[[     194       0       0       0       0       0       5       0       0       0]   97.487% 	[class: 1]
+ [       0     220       2       0       0       0       0       0       0       0]   99.099% 	[class: 2]
+ [       0       0     188       0       0       0       0       2       1       0]   98.429% 	[class: 3]
+ [       0       0       3     221       0       1       0       0       0       1]   97.788% 	[class: 4]
+ [       0       0       0       0     184       0       0       0       0       1]   99.459% 	[class: 5]
+ [       0       0       0       2       0     175       1       0       0       0]   98.315% 	[class: 6]
+ [       0       0       0       0       0       0     185       0       0       0]   100.000% 	[class: 7]
+ [       0       0       0       0       0       0       0     204       0       0]   100.000% 	[class: 8]
+ [       0       0       1       1       0       0       0       0     203       1]   98.544% 	[class: 9]
+ [       0       0       0       0       0       2       0       0       1     201]]  98.529% 	[class: 0]
+ + average row correct: 98.765063881874% 
+ + average rowUcol correct (VOC measure): 97.525446414948% 
+ + global correct: 98.75%
+0.98765063881874	
+==> patience: 22	
+==> doing epoch on training data:	
+==> online epoch # 13 [batchSize = 16]	
+ [============================================================ 11985/12000 ===========>.] ETA: 13ms | Step: 0ms         
+==> time to learn 1 sample = 0.8998207449913ms	
+ConfusionMatrix:
+[[    1200       1       0       1       0       0       2       0       1       1]   99.502% 	[class: 1]
+ [       0    1342       4       1       0       0       0       1       3       0]   99.334% 	[class: 2]
+ [       2       4    1164       4       0       0       0       2       0       0]   98.980% 	[class: 3]
+ [       0       0       2    1216       0       6       0       2       0       2]   99.023% 	[class: 4]
+ [       0       0       0       0    1179       0       0       0       0       5]   99.578% 	[class: 5]
+ [       0       1       0       3       1    1035       3       0       3       2]   98.760% 	[class: 6]
+ [       2       0       0       0       1       4    1198       0       3       0]   99.172% 	[class: 7]
+ [       0       2       2       0       0       0       0    1270       1       4]   99.296% 	[class: 8]
+ [       1       1       1       2       0       2       3       1    1111       5]   98.580% 	[class: 9]
+ [       0       0       0       1       4       3       0       2       3    1180]]  98.910% 	[class: 0]
+ + average row correct: 99.113507270813% 
+ + average rowUcol correct (VOC measure): 98.243137001991% 
+ + global correct: 99.125%
+==> saving model to /home/ankit/devel/deeplearning2016/assign1/mnist/results/model.net	
+==> testing on test set:	
+ [================================================================ 2000/2000 ==========>] Tot: 11s679ms | Step: 0ms     
+
+==> time to test 1 sample = 0.43421697616577ms	
+ConfusionMatrix:
+[[     193       0       0       0       0       0       6       0       0       0]   96.985% 	[class: 1]
+ [       0     220       2       0       0       0       0       0       0       0]   99.099% 	[class: 2]
+ [       0       0     188       0       0       0       1       1       1       0]   98.429% 	[class: 3]
+ [       0       0       2     223       0       0       0       0       1       0]   98.673% 	[class: 4]
+ [       0       0       0       0     183       0       0       2       0       0]   98.919% 	[class: 5]
+ [       0       0       0       5       0     171       2       0       0       0]   96.067% 	[class: 6]
+ [       0       0       0       0       0       0     185       0       0       0]   100.000% 	[class: 7]
+ [       0       0       1       0       0       0       0     203       0       0]   99.510% 	[class: 8]
+ [       0       0       3       1       0       0       0       0     202       0]   98.058% 	[class: 9]
+ [       0       0       0       5       0       0       0       6       1     192]]  94.118% 	[class: 0]
+ + average row correct: 97.985795736313% 
+ + average rowUcol correct (VOC measure): 96.10699057579% 
+ + global correct: 98%
+0.97985795736313	
+==> patience: 22	
+==> doing epoch on training data:	
+==> online epoch # 14 [batchSize = 16]	
+ [============================================================ 11985/12000 ===========>.] ETA: 13ms | Step: 0ms         
+==> time to learn 1 sample = 0.89894491434097ms	
+ConfusionMatrix:
+[[    1199       1       3       0       0       0       1       0       1       1]   99.420% 	[class: 1]
+ [       1    1339       5       0       2       1       0       3       0       0]   99.112% 	[class: 2]
+ [       1       3    1166       2       0       0       0       2       1       1]   99.150% 	[class: 3]
+ [       0       0       4    1214       0       1       0       3       2       4]   98.860% 	[class: 4]
+ [       0       0       0       0    1176       0       0       1       0       7]   99.324% 	[class: 5]
+ [       2       0       0       3       0    1039       2       0       1       1]   99.141% 	[class: 6]
+ [       2       0       0       0       1       1    1203       0       1       0]   99.586% 	[class: 7]
+ [       0       1       5       0       0       0       0    1263       1       9]   98.749% 	[class: 8]
+ [       1       1       1       2       0       1       0       0    1119       2]   99.290% 	[class: 9]
+ [       4       2       0       3       5       1       0       6       3    1169]]  97.988% 	[class: 0]
+ + average row correct: 99.06200170517% 
+ + average rowUcol correct (VOC measure): 98.143141269684% 
+ + global correct: 99.058333333333%
+==> saving model to /home/ankit/devel/deeplearning2016/assign1/mnist/results/model.net	
+==> testing on test set:	
+ [================================================================ 2000/2000 ==========>] Tot: 11s671ms | Step: 0ms     
+
+==> time to test 1 sample = 0.43595397472382ms	
+ConfusionMatrix:
+[[     196       0       0       0       0       0       3       0       0       0]   98.492% 	[class: 1]
+ [       0     219       1       0       1       1       0       0       0       0]   98.649% 	[class: 2]
+ [       0       0     181       0       1       0       1       5       3       0]   94.764% 	[class: 3]
+ [       0       0       1     222       0       1       0       0       2       0]   98.230% 	[class: 4]
+ [       0       0       0       0     185       0       0       0       0       0]   100.000% 	[class: 5]
+ [       0       0       0       0       0     178       0       0       0       0]   100.000% 	[class: 6]
+ [       0       0       0       0       0       2     183       0       0       0]   98.919% 	[class: 7]
+ [       0       0       0       1       0       0       0     203       0       0]   99.510% 	[class: 8]
+ [       0       0       1       1       0       2       0       0     202       0]   98.058% 	[class: 9]
+ [       0       0       0       0       2       3       0       0       0     199]]  97.549% 	[class: 0]
+ + average row correct: 98.41715991497% 
+ + average rowUcol correct (VOC measure): 96.811746358871% 
+ + global correct: 98.4%
+0.9841715991497	
+==> patience: 22	
+==> doing epoch on training data:	
+==> online epoch # 15 [batchSize = 16]	
+ [============================================================ 11985/12000 ===========>.] ETA: 13ms | Step: 0ms         
+==> time to learn 1 sample = 0.90006808439891ms	
+ConfusionMatrix:
+[[    1200       1       1       1       0       0       2       0       0       1]   99.502% 	[class: 1]
+ [       0    1346       2       0       1       0       0       2       0       0]   99.630% 	[class: 2]
+ [       0       1    1170       4       0       0       0       1       0       0]   99.490% 	[class: 3]
+ [       0       0       3    1220       0       2       0       1       0       2]   99.349% 	[class: 4]
+ [       0       1       2       0    1174       1       1       1       1       3]   99.155% 	[class: 5]
+ [       1       0       0       2       0    1043       1       0       1       0]   99.523% 	[class: 6]
+ [       2       0       0       0       1       1    1203       0       1       0]   99.586% 	[class: 7]
+ [       0       2       2       1       0       0       0    1270       0       4]   99.296% 	[class: 8]
+ [       0       0       2       1       2       1       2       1    1115       3]   98.935% 	[class: 9]
+ [       2       0       0       0       3       0       0       4       1    1183]]  99.162% 	[class: 0]
+ + average row correct: 99.362845420837% 
+ + average rowUcol correct (VOC measure): 98.738580346107% 
+ + global correct: 99.366666666667%
+==> saving model to /home/ankit/devel/deeplearning2016/assign1/mnist/results/model.net	
+==> testing on test set:	
+ [================================================================ 2000/2000 ==========>] Tot: 11s660ms | Step: 0ms     
+
+==> time to test 1 sample = 0.42434000968933ms	
+ConfusionMatrix:
+[[     197       0       0       0       0       0       2       0       0       0]   98.995% 	[class: 1]
+ [       0     220       0       0       0       1       0       0       1       0]   99.099% 	[class: 2]
+ [       0       0     185       0       0       0       1       1       4       0]   96.859% 	[class: 3]
+ [       0       0       3     217       0       2       0       1       3       0]   96.018% 	[class: 4]
+ [       0       0       0       0     183       0       0       0       0       2]   98.919% 	[class: 5]
+ [       0       0       0       1       0     177       0       0       0       0]   99.438% 	[class: 6]
+ [       0       0       0       0       0       0     185       0       0       0]   100.000% 	[class: 7]
+ [       0       0       1       0       0       0       0     202       1       0]   99.020% 	[class: 8]
+ [       0       0       1       1       0       0       0       0     203       1]   98.544% 	[class: 9]
+ [       1       0       0       0       0       0       0       0       4     199]]  97.549% 	[class: 0]
+ + average row correct: 98.443985581398% 
+ + average rowUcol correct (VOC measure): 96.916310787201% 
+ + global correct: 98.4%
+0.98443985581398	
+==> patience: 22	
+==> doing epoch on training data:	
+==> online epoch # 16 [batchSize = 16]	
+ [============================================================ 11985/12000 ===========>.] ETA: 13ms | Step: 0ms         
+==> time to learn 1 sample = 0.90215526024501ms	
+ConfusionMatrix:
+[[    1196       0       2       1       0       1       4       0       2       0]   99.171% 	[class: 1]
+ [       1    1343       2       1       1       0       0       3       0       0]   99.408% 	[class: 2]
+ [       3       2    1160       2       1       1       0       4       2       1]   98.639% 	[class: 3]
+ [       1       0       4    1216       0       3       0       1       1       2]   99.023% 	[class: 4]
+ [       0       1       2       0    1176       0       1       1       1       2]   99.324% 	[class: 5]
+ [       0       0       1       2       0    1040       3       0       1       1]   99.237% 	[class: 6]
+ [       2       1       0       1       0       2    1202       0       0       0]   99.503% 	[class: 7]
+ [       0       3       2       2       2       0       0    1266       0       4]   98.984% 	[class: 8]
+ [       1       2       1       0       2       2       1       0    1115       3]   98.935% 	[class: 9]
+ [       0       0       0       3       3       0       0       2       5    1180]]  98.910% 	[class: 0]
+ + average row correct: 99.113430380821% 
+ + average rowUcol correct (VOC measure): 98.242149949074% 
+ + global correct: 99.116666666667%
+==> saving model to /home/ankit/devel/deeplearning2016/assign1/mnist/results/model.net	
+==> testing on test set:	
+ [================================================================ 2000/2000 ==========>] Tot: 11s675ms | Step: 0ms     
+
+==> time to test 1 sample = 0.41858196258545ms	
+ConfusionMatrix:
+[[     198       0       0       0       0       0       1       0       0       0]   99.497% 	[class: 1]
+ [       0     222       0       0       0       0       0       0       0       0]   100.000% 	[class: 2]
+ [       0       0     185       0       0       0       1       3       2       0]   96.859% 	[class: 3]
+ [       1       0       4     218       0       0       1       0       1       1]   96.460% 	[class: 4]
+ [       0       0       0       0     184       0       0       1       0       0]   99.459% 	[class: 5]
+ [       0       0       0       1       0     175       2       0       0       0]   98.315% 	[class: 6]
+ [       0       0       0       0       0       0     185       0       0       0]   100.000% 	[class: 7]
+ [       0       0       2       0       0       0       0     202       0       0]   99.020% 	[class: 8]
+ [       3       0       1       1       0       0       0       0     200       1]   97.087% 	[class: 9]
+ [       1       0       0       0       0       0       0       1       3     199]]  97.549% 	[class: 0]
+ + average row correct: 98.424636721611% 
+ + average rowUcol correct (VOC measure): 96.884196400642% 
+ + global correct: 98.4%
+0.98424636721611	
+==> patience: 22	
+==> doing epoch on training data:	
+==> online epoch # 17 [batchSize = 16]	
+ [============================================================ 11985/12000 ===========>.] ETA: 13ms | Step: 0ms         
+==> time to learn 1 sample = 0.89796823263168ms	
+ConfusionMatrix:
+[[    1203       0       1       0       0       0       0       0       2       0]   99.751% 	[class: 1]
+ [       0    1343       3       0       2       0       0       1       1       1]   99.408% 	[class: 2]
+ [       2       3    1161       3       1       0       0       2       4       0]   98.724% 	[class: 3]
+ [       0       0       2    1217       0       6       0       2       1       0]   99.104% 	[class: 4]
+ [       0       1       1       0    1177       1       0       0       0       4]   99.409% 	[class: 5]
+ [       0       1       0       4       0    1035       2       1       4       1]   98.760% 	[class: 6]
+ [       0       0       0       0       0       1    1207       0       0       0]   99.917% 	[class: 7]
+ [       0       1       3       0       0       0       0    1271       2       2]   99.375% 	[class: 8]
+ [       2       1       2       2       0       2       0       1    1116       1]   99.024% 	[class: 9]
+ [       2       0       0       0       3       3       0       3       0    1182]]  99.078% 	[class: 0]
+ + average row correct: 99.254977703094% 
+ + average rowUcol correct (VOC measure): 98.522104620934% 
+ + global correct: 99.266666666667%
+==> saving model to /home/ankit/devel/deeplearning2016/assign1/mnist/results/model.net	
+==> testing on test set:	
+ [================================================================ 2000/2000 ==========>] Tot: 11s652ms | Step: 0ms     
+
+==> time to test 1 sample = 0.42994093894958ms	
+ConfusionMatrix:
+[[     195       0       0       0       0       1       3       0       0       0]   97.990% 	[class: 1]
+ [       0     222       0       0       0       0       0       0       0       0]   100.000% 	[class: 2]
+ [       0       0     187       0       0       0       1       2       1       0]   97.906% 	[class: 3]
+ [       0       0       3     221       0       0       0       0       1       1]   97.788% 	[class: 4]
+ [       0       0       0       0     185       0       0       0       0       0]   100.000% 	[class: 5]
+ [       0       0       0       0       0     178       0       0       0       0]   100.000% 	[class: 6]
+ [       0       0       0       0       0       0     185       0       0       0]   100.000% 	[class: 7]
+ [       0       0       0       0       0       0       0     203       0       1]   99.510% 	[class: 8]
+ [       0       0       0       2       0       2       0       0     201       1]   97.573% 	[class: 9]
+ [       0       0       0       0       0       2       0       0       0     202]]  99.020% 	[class: 0]
+ + average row correct: 98.978555202484% 
+ + average rowUcol correct (VOC measure): 97.922573685646% 
+ + global correct: 98.95%
+0.98978555202484	
+==> patience: 22	
+==> doing epoch on training data:	
+==> online epoch # 18 [batchSize = 16]	
+ [============================================================ 11985/12000 ===========>.] ETA: 13ms | Step: 0ms         
+==> time to learn 1 sample = 0.89569767316182ms	
+ConfusionMatrix:
+[[    1202       0       0       0       0       0       1       0       1       2]   99.668% 	[class: 1]
+ [       0    1345       2       1       0       0       0       1       1       1]   99.556% 	[class: 2]
+ [       0       1    1169       1       0       0       0       3       1       1]   99.405% 	[class: 3]
+ [       0       0       2    1218       0       2       0       2       3       1]   99.186% 	[class: 4]
+ [       0       0       0       0    1182       0       0       0       0       2]   99.831% 	[class: 5]
+ [       1       0       1       1       0    1042       1       1       1       0]   99.427% 	[class: 6]
+ [       0       0       0       0       0       0    1207       0       1       0]   99.917% 	[class: 7]
+ [       1       2       2       2       0       0       0    1271       0       1]   99.375% 	[class: 8]
+ [       0       0       1       3       1       2       1       0    1117       2]   99.113% 	[class: 9]
+ [       1       0       1       1       4       1       0       1       3    1181]]  98.994% 	[class: 0]
+ + average row correct: 99.447175264359% 
+ + average rowUcol correct (VOC measure): 98.898913860321% 
+ + global correct: 99.45%
+==> saving model to /home/ankit/devel/deeplearning2016/assign1/mnist/results/model.net	
+==> testing on test set:	
+ [================================================================ 2000/2000 ==========>] Tot: 11s617ms | Step: 0ms     
+
+==> time to test 1 sample = 0.42873048782349ms	
+ConfusionMatrix:
+[[     198       0       0       0       0       1       0       0       0       0]   99.497% 	[class: 1]
+ [       0     221       1       0       0       0       0       0       0       0]   99.550% 	[class: 2]
+ [       0       0     190       0       0       0       0       1       0       0]   99.476% 	[class: 3]
+ [       0       0       2     222       0       0       0       0       2       0]   98.230% 	[class: 4]
+ [       0       0       0       0     185       0       0       0       0       0]   100.000% 	[class: 5]
+ [       0       0       0       1       0     177       0       0       0       0]   99.438% 	[class: 6]
+ [       0       0       0       0       0       1     184       0       0       0]   99.459% 	[class: 7]
+ [       0       0       2       0       0       0       0     202       0       0]   99.020% 	[class: 8]
+ [       0       1       1       1       0       1       0       0     201       1]   97.573% 	[class: 9]
+ [       0       0       0       0       0       0       0       0       0     204]]  100.000% 	[class: 0]
+ + average row correct: 99.224364161491% 
+ + average rowUcol correct (VOC measure): 98.434865474701% 
+ + global correct: 99.2%
+0.99224364161491	
+==> found new best model!	
+==> not a significant improvement	
+==> patience: 22	
+==> doing epoch on training data:	
+==> online epoch # 19 [batchSize = 16]	
+ [============================================================ 11985/12000 ===========>.] ETA: 13ms | Step: 0ms         
+==> time to learn 1 sample = 0.89878332614899ms	
+ConfusionMatrix:
+[[    1201       1       0       1       0       0       1       0       1       1]   99.585% 	[class: 1]
+ [       0    1349       1       1       0       0       0       0       0       0]   99.852% 	[class: 2]
+ [       0       1    1169       1       0       0       0       1       3       1]   99.405% 	[class: 3]
+ [       1       0       2    1221       0       1       0       0       1       2]   99.430% 	[class: 4]
+ [       0       0       0       0    1179       0       0       0       0       5]   99.578% 	[class: 5]
+ [       0       0       0       1       0    1043       3       0       1       0]   99.523% 	[class: 6]
+ [       2       0       0       0       1       3    1202       0       0       0]   99.503% 	[class: 7]
+ [       1       0       2       1       0       0       0    1271       1       3]   99.375% 	[class: 8]
+ [       1       0       1       0       2       0       3       1    1117       2]   99.113% 	[class: 9]
+ [       1       0       0       0       3       0       0       5       1    1183]]  99.162% 	[class: 0]
+ + average row correct: 99.452498555183% 
+ + average rowUcol correct (VOC measure): 98.913315534592% 
+ + global correct: 99.458333333333%
+==> saving model to /home/ankit/devel/deeplearning2016/assign1/mnist/results/model.net	
+==> testing on test set:	
+ [================================================================ 2000/2000 ==========>] Tot: 11s661ms | Step: 0ms     
+
+==> time to test 1 sample = 0.43221342563629ms	
+ConfusionMatrix:
+[[     192       0       0       0       0       0       7       0       0       0]   96.482% 	[class: 1]
+ [       0     220       2       0       0       0       0       0       0       0]   99.099% 	[class: 2]
+ [       0       0     189       0       0       0       1       1       0       0]   98.953% 	[class: 3]
+ [       0       0       3     220       0       2       0       0       1       0]   97.345% 	[class: 4]
+ [       0       0       0       0     185       0       0       0       0       0]   100.000% 	[class: 5]
+ [       0       0       0       1       0     176       1       0       0       0]   98.876% 	[class: 6]
+ [       0       0       0       0       0       0     185       0       0       0]   100.000% 	[class: 7]
+ [       0       0       2       0       0       0       0     202       0       0]   99.020% 	[class: 8]
+ [       0       0       1       0       0       0       0       0     205       0]   99.515% 	[class: 9]
+ [       0       0       0       1       0       4       0       0       0     199]]  97.549% 	[class: 0]
+ + average row correct: 98.683911561966% 
+ + average rowUcol correct (VOC measure): 97.318004369736% 
+ + global correct: 98.65%
+0.98683911561966	
+==> patience: 22	
+==> doing epoch on training data:	
+==> online epoch # 20 [batchSize = 16]	
+ [============================================================ 11985/12000 ===========>.] ETA: 13ms | Step: 0ms         
+==> time to learn 1 sample = 0.89781775077184ms	
+ConfusionMatrix:
+[[    1198       0       2       0       0       1       3       1       0       1]   99.337% 	[class: 1]
+ [       1    1342       1       1       1       0       2       3       0       0]   99.334% 	[class: 2]
+ [       0       3    1168       2       0       0       0       1       1       1]   99.320% 	[class: 3]
+ [       0       1       2    1214       0       7       0       1       1       2]   98.860% 	[class: 4]
+ [       0       1       0       0    1179       0       1       1       1       1]   99.578% 	[class: 5]
+ [       0       0       0       7       0    1039       0       0       1       1]   99.141% 	[class: 6]
+ [       0       1       0       1       1       0    1202       0       3       0]   99.503% 	[class: 7]
+ [       0       4       3       0       2       0       0    1266       0       4]   98.984% 	[class: 8]
+ [       1       0       3       0       0       0       2       1    1118       2]   99.201% 	[class: 9]
+ [       2       1       0       1       0       2       0       5       4    1178]]  98.743% 	[class: 0]
+ + average row correct: 99.200003147125% 
+ + average rowUcol correct (VOC measure): 98.412714004517% 
+ + global correct: 99.2%
+==> saving model to /home/ankit/devel/deeplearning2016/assign1/mnist/results/model.net	
+==> testing on test set:	
+ [================================================================ 2000/2000 ==========>] Tot: 11s622ms | Step: 0ms     
+
+==> time to test 1 sample = 0.41836798191071ms	
+ConfusionMatrix:
+[[     198       0       0       0       0       0       1       0       0       0]   99.497% 	[class: 1]
+ [       0     220       1       0       0       0       0       0       1       0]   99.099% 	[class: 2]
+ [       0       0     180       0       0       0       1       5       5       0]   94.241% 	[class: 3]
+ [       0       0       1     222       0       2       0       0       1       0]   98.230% 	[class: 4]
+ [       0       0       0       0     183       0       0       2       0       0]   98.919% 	[class: 5]
+ [       0       0       0       1       0     177       0       0       0       0]   99.438% 	[class: 6]
+ [       0       0       0       0       0       0     185       0       0       0]   100.000% 	[class: 7]
+ [       0       0       0       0       0       0       0     204       0       0]   100.000% 	[class: 8]
+ [       0       0       1       0       0       0       0       0     205       0]   99.515% 	[class: 9]
+ [       0       0       0       0       0       1       0       1       2     200]]  98.039% 	[class: 0]
+ + average row correct: 98.69784116745% 
+ + average rowUcol correct (VOC measure): 97.443137764931% 
+ + global correct: 98.7%
+0.9869784116745	
+==> patience: 22	
+==> doing epoch on training data:	
+==> online epoch # 21 [batchSize = 16]	
+ [============================================================ 11985/12000 ===========>.] ETA: 13ms | Step: 0ms         
+==> time to learn 1 sample = 0.89959541956584ms	
+ConfusionMatrix:
+[[    1198       0       0       3       0       0       2       0       2       1]   99.337% 	[class: 1]
+ [       1    1344       4       0       0       0       1       0       0       1]   99.482% 	[class: 2]
+ [       1       1    1160       4       0       0       2       5       2       1]   98.639% 	[class: 3]
+ [       0       0       3    1221       0       1       0       0       1       2]   99.430% 	[class: 4]
+ [       0       1       0       0    1178       0       0       1       1       3]   99.493% 	[class: 5]
+ [       1       1       0       1       1    1041       2       0       1       0]   99.332% 	[class: 6]
+ [       3       0       0       0       1       1    1200       0       3       0]   99.338% 	[class: 7]
+ [       0       0       2       0       0       1       0    1274       0       2]   99.609% 	[class: 8]
+ [       0       1       1       3       1       4       0       1    1116       0]   99.024% 	[class: 9]
+ [       3       0       0       3       6       1       0       1       0    1179]]  98.826% 	[class: 0]
+ + average row correct: 99.251049757004% 
+ + average rowUcol correct (VOC measure): 98.514150977135% 
+ + global correct: 99.258333333333%
+==> saving model to /home/ankit/devel/deeplearning2016/assign1/mnist/results/model.net	
+==> testing on test set:	
+ [================================================================ 2000/2000 ==========>] Tot: 11s643ms | Step: 0ms     
+
+==> time to test 1 sample = 0.41905200481415ms	
+ConfusionMatrix:
+[[     195       0       0       0       0       0       3       0       1       0]   97.990% 	[class: 1]
+ [       0     221       1       0       0       0       0       0       0       0]   99.550% 	[class: 2]
+ [       0       0     188       0       0       0       0       2       1       0]   98.429% 	[class: 3]
+ [       0       0       2     221       0       1       0       0       1       1]   97.788% 	[class: 4]
+ [       0       0       0       0     184       0       0       0       0       1]   99.459% 	[class: 5]
+ [       0       0       0       1       0     177       0       0       0       0]   99.438% 	[class: 6]
+ [       0       0       0       0       0       0     185       0       0       0]   100.000% 	[class: 7]
+ [       0       0       3       0       0       0       0     201       0       0]   98.529% 	[class: 8]
+ [       0       1       2       1       0       0       0       0     201       1]   97.573% 	[class: 9]
+ [       1       0       0       0       0       0       0       1       1     201]]  98.529% 	[class: 0]
+ + average row correct: 98.728573322296% 
+ + average rowUcol correct (VOC measure): 97.466890215874% 
+ + global correct: 98.7%
+0.98728573322296	
+==> patience: 22	
+==> doing epoch on training data:	
+==> online epoch # 22 [batchSize = 16]	
+ [============================================================ 11985/12000 ===========>.] ETA: 13ms | Step: 0ms         
+==> time to learn 1 sample = 0.89705574512482ms	
+ConfusionMatrix:
+[[    1202       1       0       0       0       0       1       0       1       1]   99.668% 	[class: 1]
+ [       1    1344       2       1       0       0       0       0       2       1]   99.482% 	[class: 2]
+ [       0       3    1168       4       0       0       0       0       1       0]   99.320% 	[class: 3]
+ [       0       2       4    1214       0       4       0       1       2       1]   98.860% 	[class: 4]
+ [       0       0       1       0    1180       0       0       0       0       3]   99.662% 	[class: 5]
+ [       0       0       0       4       0    1040       1       0       3       0]   99.237% 	[class: 6]
+ [       0       0       0       0       0       2    1204       0       1       1]   99.669% 	[class: 7]
+ [       0       0       1       1       2       0       0    1273       0       2]   99.531% 	[class: 8]
+ [       0       1       2       0       0       1       2       1    1119       1]   99.290% 	[class: 9]
+ [       2       1       0       1       1       0       0       3       2    1183]]  99.162% 	[class: 0]
+ + average row correct: 99.388033747673% 
+ + average rowUcol correct (VOC measure): 98.783506155014% 
+ + global correct: 99.391666666667%
+==> saving model to /home/ankit/devel/deeplearning2016/assign1/mnist/results/model.net	
+==> testing on test set:	
+ [================================================================ 2000/2000 ==========>] Tot: 11s641ms | Step: 0ms     
+
+==> time to test 1 sample = 0.43224847316742ms	
+ConfusionMatrix:
+[[     198       0       0       0       0       0       1       0       0       0]   99.497% 	[class: 1]
+ [       0     221       0       0       1       0       0       0       0       0]   99.550% 	[class: 2]
+ [       0       0     185       0       1       0       0       3       2       0]   96.859% 	[class: 3]
+ [       0       0       1     222       0       1       0       0       1       1]   98.230% 	[class: 4]
+ [       0       0       0       0     185       0       0       0       0       0]   100.000% 	[class: 5]
+ [       0       0       0       0       0     178       0       0       0       0]   100.000% 	[class: 6]
+ [       0       0       0       0       0       1     184       0       0       0]   99.459% 	[class: 7]
+ [       0       0       0       0       0       0       0     203       0       1]   99.510% 	[class: 8]
+ [       0       1       0       1       0       1       0       0     202       1]   98.058% 	[class: 9]
+ [       1       0       0       0       0       2       0       1       0     200]]  98.039% 	[class: 0]
+ + average row correct: 98.920249342918% 
+ + average rowUcol correct (VOC measure): 97.824288010597% 
+ + global correct: 98.9%
+0.98920249342918	
+==> out of patience	
+==> saving final model to /home/ankit/devel/deeplearning2016/assign1/mnist/results/model.net	
+
