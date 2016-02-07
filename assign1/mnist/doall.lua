@@ -111,8 +111,13 @@ while true do
    end
 end
 
-model = bestModel
+print('Best Model accuracy is ' .. bestAcc)
+obj = {
+        model = bestModel,
+        mean = mean,
+        std = std
+}
 local filename = paths.concat(opt.save, 'model.net')
 os.execute('mkdir -p ' .. sys.dirname(filename))
 print('==> saving final model to '..filename)
-torch.save(filename, model)
+torch.save(filename, obj)
