@@ -117,7 +117,7 @@ obj = {
         mean = mean,
         std = std
 }
-local filename = paths.concat(opt.save, 'model.net')
+local filename = paths.concat(opt.save, 'finalmodel.net')
 os.execute('mkdir -p ' .. sys.dirname(filename))
 print('==> saving final model to '..filename)
 torch.save(filename, obj)
