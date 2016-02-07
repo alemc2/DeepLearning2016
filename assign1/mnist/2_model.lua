@@ -48,7 +48,7 @@ ninputs = nfeats*width*height
 nhiddens = ninputs / 2
 
 -- hidden units, filter sizes (for ConvNet only):
-nstates = {64,64,128}
+nstates = {50,50,150}
 filtsize = 5
 poolsize = 2
 --normkernel = image.gaussian1D(7)
@@ -91,7 +91,7 @@ elseif opt.model == 'convnet' then
 
       -- stage 3 : standard 2-layer neural network
       model:add(nn.View(nstates[2]*filtsize*filtsize))
-      model:add(nn.Dropout(0.5))
+      model:add(nn.Dropout(0.45))
       model:add(nn.Linear(nstates[2]*filtsize*filtsize, nstates[3]))
       model:add(nn.ReLU())
       model:add(nn.Linear(nstates[3], noutputs))
