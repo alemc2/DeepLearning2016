@@ -160,11 +160,26 @@ function train()
       for i = t,math.min(t+opt.batchSize-1,trainData:size()) do
          -- load new sample
          local input = trainData.data[shuffle[i]]:clone()
+         local height = input:size(2)
+         local width = input:size(3)
 
          input[{1,{},{}}]:mul(std)
          input[{1,{},{}}]:add(mean)
 
-         input = image.rotate(input, torch.random(-math.pi/15,math.pi/15))
+         -- Rotate between -15 and 15 degrees
+         input = image.rotate(input, torch.rand(1):mul(math.pi/6):add(-math.pi/12)[1])
+         -- Shear by tan(-15) and tan(15) degrees
+         local warpfield = torch.Tensor(2,height,width)
+         local grid_y = torch.ger(torch.linspace(0,height,height),torch.ones(width))
+         local grid_x = torch.ger(torch.ones(height),torch.linspace(0,width,width))
+         local beta = torch.rand(1):mul(math.pi/6):add(-math.pi/12)[1]
+         local displacement = torch.mul(grid_y,math.tan(beta))
+         displacement:add(-height*math.tan(beta)/2);
+         grid_x:add(displacement);
+         warpfield[1] = grid_y
+         warpfield[2] = grid_x
+         input = image.warp(input,warpfield,'bilinear',false)
+         -- translate +/- 3 pixels
          input = image.translate(input, torch.random(-3,3), torch.random(-3,3))
 
          input[{1,{},{}}]:add(-mean)
