@@ -159,15 +159,16 @@ function train()
       local targets = {}
       for i = t,math.min(t+opt.batchSize-1,trainData:size()) do
          -- load new sample
-         local input = trainData.data[shuffle[i]]
-         input:mul(std)
-         input:add(mean)
+         local input = trainData.data[shuffle[i]]:clone()
+
+         input[{1,{},{}}]:mul(std)
+         input[{1,{},{}}]:add(mean)
 
          input = image.rotate(input, torch.random(-math.pi/15,math.pi/15))
          input = image.translate(input, torch.random(-3,3), torch.random(-3,3))
 
-         input:add(-mean)
-         input:div(std)
+         input[{1,{},{}}]:add(-mean)
+         input[{1,{},{}}]:div(std)
 
          local target = trainData.labels[shuffle[i]]
          if opt.type == 'double' then input = input:double()
