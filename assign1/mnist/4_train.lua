@@ -167,7 +167,7 @@ function train()
          input[{1,{},{}}]:add(mean)
 
          -- Rotate between -15 and 15 degrees
-         input = image.rotate(input, torch.rand(1):mul(math.pi/6):add(-math.pi/12)[1])
+         input = image.rotate(input, torch.rand(1):mul(math.pi/8):add(-math.pi/16)[1])
          -- Shear by tan(-15) and tan(15) degrees
          local warpfield = torch.Tensor(2,height,width)
          local grid_y = torch.ger(torch.linspace(0,height,height),torch.ones(width))
@@ -180,7 +180,7 @@ function train()
          warpfield[2] = grid_x
          input = image.warp(input,warpfield,'bilinear',false)
          -- translate +/- 3 pixels
-         input = image.translate(input, torch.random(-3,3), torch.random(-3,3))
+         input = image.translate(input, torch.random(-2,2), torch.random(-2,2))
 
          input[{1,{},{}}]:add(-mean)
          input[{1,{},{}}]:div(std)
