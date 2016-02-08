@@ -47,7 +47,7 @@ cmd:option('-weightDecay', 0, 'weight decay (SGD only)')
 cmd:option('-momentum', 0, 'momentum (SGD only)')
 cmd:option('-t0', 1, 'start averaging at t0 (ASGD only), in nb of epochs')
 cmd:option('-maxIter', 2, 'maximum nb of iterations for CG and LBFGS')
-cmd:option('-patience', 5, 'minimum number of epochs to train for')
+cmd:option('-patience', 10, 'minimum number of epochs to train for')
 cmd:option('-improvementThreshold', 0.999, 'amount to multiply test accuracy to determine significant improvement')
 cmd:option('-patienceIncrease', 2, 'amount to multiply patience by on significant improvement')
 cmd:option('-type', 'cuda', 'type: double | float | cuda') -- XXX: use double for final submission
@@ -91,12 +91,18 @@ while true do
 
    if acc > bestAcc then
       print '==> found new best model!'
+      local old_p = patience
       if acc * improvementThreshold > bestAcc then
-         local old_p = patience
          patience = math.max(patience, patienceIncrease * (epoch-1))
-         print('==> increasing patience from ' .. old_p .. ' to ' .. patience)
+         if patience ~= old_p then
+            print('==> increasing patience from ' .. old_p .. ' to ' .. patience)
+         end
       else
          print '==> not a significant improvement'
+         if patience <= epoch then
+            patience = patience + 2
+            print('==> increasing patience from ' .. old_p .. ' to ' .. patience)
+         end
       end
 
       bestAcc = acc

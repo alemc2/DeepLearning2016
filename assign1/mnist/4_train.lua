@@ -160,8 +160,11 @@ function train()
       for i = t,math.min(t+opt.batchSize-1,trainData:size()) do
          -- load new sample
          local input = trainData.data[shuffle[i]]
-         image.rotate(input, torch.random(-80,80)/100)
-         image.translate(input, torch.random(-3,2), torch.random(-2,3))
+         --if torch.random(0,7) == 0 then
+         --   input[{1,{},{}}] = image.dilate(input[{1,{},{}}])
+         --end
+         input = image.rotate(input, torch.random(-math.pi/15,math.pi/15))
+         input = image.translate(input, torch.random(-3,3), torch.random(-3,3))
          local target = trainData.labels[shuffle[i]]
          if opt.type == 'double' then input = input:double()
          elseif opt.type == 'cuda' then input = input:cuda() end
