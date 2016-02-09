@@ -236,6 +236,46 @@ Here, we consider the components of $X_{in}$ to be independent of one another. T
 \end{itemize}
 
 \item Experiments and observations:
+\begin{table}[h]
+\centering
+\begin{tabular}{| l | l |}
+\hline
+\textbf{Network} & \textbf{Accuracy} \\ \hline
+default & 0.980 \\ \hline
+tanh to relu (r) & 0.983 \\ \hline
+(r)+ dropout at input & 0.973 \\ \hline
+(r)+ spatial dropout at input & 0.979 \\ \hline
+(r)+ spatial dropout after first conv layer relu & 0.984 \\ \hline
+(r)+ dropout before first linear layer (d) & 0.991 \\ \hline
+(r)+ spatial dropout after second conv layer relu (e) & 0.992 \\ \hline
+(d,e)& 0.993 \\ \hline
+(d,e)+ lower spacial dropout (e) from 0.5 to 0.25 & 0.991 \\ \hline
+(d,e)+ lower dropout (d) from 0.5 to 0.25 & 0.993 \\ \hline
+(d,e)+ lower both dropouts from 0.5 to 0.25 & 0.993 \\ \hline
+(d,e)+ increase both dropouts from 0.5 to 0.6 & 0.983 \\ \hline
+(d,e)+ conv 7$\times$7, 5$\times$5, new linear layer 1024 $\to$ 512 $\to$ 128 $\to$ 10 & 0.991 \\ \hline
+(d)+ random image rotations and translations & 0.993 \\ \hline
+(d)+ random image rotations, translations, shearing (s) & 0.992 \\ \hline
+(s)+ conv(32 $\to$ 64) $\to$ linear(1024 $\to$ 10) (f) & \textbf{0.994} \\ \hline
+\end{tabular}
+\caption{Validation accuracies with different network structures.}
+\label{table:acc}
+\end{table}
+
+\begin{table}[h]
+\centering
+\begin{tabular}{| l | l | l |}
+\hline
+\textbf{Optimizer} & \textbf{Hyperparameters} & \textbf{Accuracy} \\ \hline
+SGD & LR = $10^{-3}$, wt. decay = 0, momentum = 0, LR decay = $10^{-7}$ & 0.983 \\ \hline
+ADAM & LR = $10^{-3}$, $\beta_1$ = 0.9, $\beta_2$ = 0.999, $\epsilon$ = $10^{-8}$ & \textbf{0.994} \\ \hline
+ADAGRAD & LR = $10^{-3}$ & 0.989 \\ \hline
+ADADELTA & & 0.991 \\ \hline
+\end{tabular}
+\caption{Validation accuracies for structure (f) from Table \ref{table:acc} using different optimizers.}
+\end{table}
+
+We also tried the other losses in the sample code, without getting any conclusive difference.
 
 \item Intuition:
 
