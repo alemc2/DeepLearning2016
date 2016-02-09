@@ -217,15 +217,33 @@ Here, we consider the components of $X_{in}$ to be independent of one another. T
 \newproblem{Torch (MNIST Handwritten Digit Recognition)}
 
 \ifnum\me<2
-\begin{itemize}
-\item[]
 \begin{solution}
-TODO
+\\We performed experiments on the MNIST dataset trying to classify on it using a 4 layered network. We achieved an accuracy of $xxx\%$ on the test set with our model. A detailed explanation of our experiments is mentioned below:
+\begin{enumerate}
+\item Overview of the network
+\begin{itemize}
+\item Dataset and partitioning:
+\\We used the MNIST handwritten character dataset for these experiments. It consists of $60,000$ data points in the training set and another $10,000$ data points in the test set. For the purpose of our experiments we split the training set as $55,000$ points for training the network and the remaining $5,000$ points for tuning the parameters using cross-validation.
+\\The data that was loaded was normalized to have zero mean and unit variance. The parameters used for this normalization were stored and used to normalize the cross-validation and test set as well.
+
+\item Model and Loss Function:
+\\The model starts with a convolution layer of $5 \times 5$ filter bank of size $32$. This is followed by a ReLu layer and a pooling layer. This is followed by another convolution layer of $5 \times 5$ filter bank of size $64$ which is followed by another set of ReLu and pooling layers. Then it is followed by a linear layer mapping to 1024 points which is terminated by a dropout layer and another linear layer resulting in 10 outputs.
+\\The Loss function we used was the negative log likelihood measure.
+
+\item Training and distortions:
+
+\item Testing:
+\end{itemize}
+
+\item Experiments and observations:
+
+\item Intuition:
+
+\item Results and Remarks:
+\end{enumerate}
 \end{solution}
 
 \fi
-
-\end{itemize}
 
 
 
