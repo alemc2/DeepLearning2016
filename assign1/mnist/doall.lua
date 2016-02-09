@@ -29,7 +29,7 @@ cmd:text('Options:')
 cmd:option('-seed', 1, 'fixed input seed for repeatable experiments')
 cmd:option('-threads', 2, 'number of threads')
 -- data:
-cmd:option('-size', 'valid', 'how many samples do we load: small | full | valid') -- XXX: use full for final submission
+cmd:option('-size', 'valid', 'how many samples do we load: small | full | valid')
 -- model:
 cmd:option('-model', 'convnet', 'type of model to construct: linear | mlp | convnet')
 -- loss:
@@ -50,7 +50,7 @@ cmd:option('-maxIter', 2, 'maximum nb of iterations for CG and LBFGS')
 cmd:option('-patience', 20, 'minimum number of epochs to train for')
 cmd:option('-improvementThreshold', 0.999, 'amount to multiply test accuracy to determine significant improvement')
 cmd:option('-patienceIncrease', 2, 'amount to multiply patience by on significant improvement')
-cmd:option('-type', 'cuda', 'type: double | float | cuda') -- XXX: use double for final submission
+cmd:option('-type', 'double', 'type: double | float | cuda')
 cmd:text()
 opt = cmd:parse(arg or {})
 

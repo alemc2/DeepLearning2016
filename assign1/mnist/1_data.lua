@@ -58,8 +58,8 @@ elseif opt.size == 'small' then
    tesize = 2000
 elseif opt.size == 'valid' then -- Make sure trsize + tesize <= full trsize
    print '==> using reduced training data, with part of that as test/validation data'
-   trsize = 12000
-   tesize = 2000
+   trsize = 55000
+   tesize = 5000
 end
 
 ----------------------------------------------------------------------
