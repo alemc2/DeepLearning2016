@@ -27,7 +27,7 @@ cmd:option('-save', 'results', 'subdirectory to save/log experiments in')
 cmd:option('-size', 'full', 'how many samples do we load: small | full')
 cmd:option('-model', 'results/finalmodel.net', 'relative path of model file: results/finalmodel.net')
 cmd:option('-testset', 'mnist.t7/test_32x32.t7' , 'relative path of test data set : mnist.t7/test_32x32.t7') 
-cmd:option('-output', 'results/predictions.csv', 'relative path where you want to store predicitions csv file : predictions.csv')
+cmd:option('-output', 'predictions.csv', 'relative path where you want to store predicitions csv file : predictions.csv')
 --------------------------------------------------------------------
 cmd:text()
 opt = cmd:parse(arg or {})
