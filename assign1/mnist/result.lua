@@ -21,7 +21,7 @@ cmd:text('Options:')
 -- global:
 cmd:option('-seed', 1, 'fixed input seed for repeatable experiments')
 cmd:option('-threads', 2, 'number of threads')
-cmd:option('-type', 'cuda', 'type: double | float | cuda') -- XXX: use double for final submission
+cmd:option('-type', 'float', 'type: double | float | cuda')
 cmd:option('-save', 'results', 'subdirectory to save/log experiments in')
 -- data:
 cmd:option('-size', 'full', 'how many samples do we load: small | full')

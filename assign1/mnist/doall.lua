@@ -50,7 +50,7 @@ cmd:option('-maxIter', 2, 'maximum nb of iterations for CG and LBFGS')
 cmd:option('-patience', 20, 'minimum number of epochs to train for')
 cmd:option('-improvementThreshold', 0.999, 'amount to multiply test accuracy to determine significant improvement')
 cmd:option('-patienceIncrease', 2, 'amount to multiply patience by on significant improvement')
-cmd:option('-type', 'double', 'type: double | float | cuda')
+cmd:option('-type', 'float', 'type: double | float | cuda')
 cmd:text()
 opt = cmd:parse(arg or {})
 
