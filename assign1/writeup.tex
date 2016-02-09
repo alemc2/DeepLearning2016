@@ -37,12 +37,14 @@ I assume you know how to print .ps files (``lpr -Pprinter ps#.ps'')
 \title{Deep Learning}
 \documentclass[11pt]{article}
 \usepackage{amsfonts,amsmath,physics}
+\usepackage[backend=bibtex,sorting=none]{biblatex}
 \usepackage{latexsym, graphicx}
-\usepackage{amssymb}
+\usepackage{amssymb, gensymb}
 \usepackage{mathtools}
 \usepackage{clrscode3e}
 \usepackage{tikz}
 \usepackage{bm}
+\usepackage{hyperref}
 \usetikzlibrary{trees}
 \usepackage{tikz-qtree}
 \setlength{\oddsidemargin}{.0in}
@@ -50,6 +52,8 @@ I assume you know how to print .ps files (``lpr -Pprinter ps#.ps'')
 \setlength{\textwidth}{6.5in}
 \setlength{\topmargin}{-0.4in}
 \setlength{\textheight}{8.5in}
+
+\addbibresource{bibliography.bib}
 
 \newcommand{\handout}[5]{
    \renewcommand{\thepage}{#1, Page \arabic{page}}
@@ -218,7 +222,7 @@ Here, we consider the components of $X_{in}$ to be independent of one another. T
 
 \ifnum\me<2
 \begin{solution}
-\\We performed experiments on the MNIST dataset trying to classify on it using a 4 layered network. We achieved an accuracy of $xxx\%$ on the test set with our model. A detailed explanation of our experiments is mentioned below:
+\\We performed experiments on the MNIST dataset trying to classify on it using a 4 layered network. We achieved an accuracy of $99.4\%$ on the test set with our model. A detailed explanation of our experiments is mentioned below:
 \begin{enumerate}
 \item Overview of the network
 \begin{itemize}
@@ -227,12 +231,18 @@ Here, we consider the components of $X_{in}$ to be independent of one another. T
 \\The data that was loaded was normalized to have zero mean and unit variance. The parameters used for this normalization were stored and used to normalize the cross-validation and test set as well.
 
 \item Model and Loss Function:
-\\The model starts with a convolution layer of $5 \times 5$ filter bank of size $32$. This is followed by a ReLu layer and a pooling layer. This is followed by another convolution layer of $5 \times 5$ filter bank of size $64$ which is followed by another set of ReLu and pooling layers. Then it is followed by a linear layer mapping to 1024 points which is terminated by a dropout layer and another linear layer resulting in 10 outputs.
+\\The model starts with a convolution layer of $5 \times 5$ filter bank of size $32$. This is followed by a ReLu layer and a pooling layer. This is followed by another convolution layer of $5 \times 5$ filter bank of size $64$ which is followed by another set of ReLu and pooling layers. Then it is followed by a linear layer mapping to 1024 points which is terminated by a dropout layer and another linear layer resulting in 10 outputs. Using the conventions defined in \cite{MCDNN} we can write it as $1 \times 32 \times 32 - 32C5 - ReLU - MP2 - 64C5 - ReLU - MP2 - 1024N - ReLU - Dropout - 10N$.
 \\The Loss function we used was the negative log likelihood measure.
 
 \item Training and distortions:
-
+\\While training we make use of the ADAM optimizer \cite{ADAM} for the stochastic gradient based optimization. The hyperparameters used for ADAM are: learning rate $\alpha = 0.001$, exponential decay rates $\beta_1 = 0.9, \beta_2 = 0.999$ and the fuzz factor $\epsilon = 10^{-8}$. At each epoch we also introduce some distortions to increase the number of training images. This allows for training the network with many weights, making them insensitive to in-class variability. The distortions introduced are a combination of rotation, shear and translation with the following parameters:
+\begin{enumerate}
+\item Rotation of $[-11.25 \degree,11.25 \degree]$.
+\item Shear on horizontal axis such that ratio of shear with respect to height is $\tan(\beta)$ where $\beta \in [-15\degree , 15\degree]$
+\item Translation of $[-2,2]$ pixels in either direction.
+\end{enumerate}
 \item Testing:
+\\At each epoch of training the model was tested on the cross-validation set. This was done to identify the stopping criteria. The early stopping criteria we use is one of a patience based models. We start with an initial patience level of 20. Then at each epoch , we check to see if the accuracy on the cross-validation set has increased compared to the best model seen earlier. If the improvement is $>1\%$ then we set the patience to twice the current epoch (if not higher already). If the improvement is $<1\%$ then we increase the patience by 2. The training stops when number of epochs = patience. This way we implement an early stopping preventing unnecessary runtime and overfitting.
 \end{itemize}
 
 \item Experiments and observations:
@@ -286,7 +296,7 @@ We also tried the other losses in the sample code, without getting any conclusiv
 \fi
 
 
-
+\printbibliography
 \end{document}
 
 
