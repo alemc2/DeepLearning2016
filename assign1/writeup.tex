@@ -47,6 +47,7 @@ I assume you know how to print .ps files (``lpr -Pprinter ps#.ps'')
 \usepackage{hyperref}
 \usetikzlibrary{trees}
 \usepackage{tikz-qtree}
+\usepackage{graphicx,float}
 \setlength{\oddsidemargin}{.0in}
 \setlength{\evensidemargin}{.0in}
 \setlength{\textwidth}{6.5in}
@@ -54,6 +55,7 @@ I assume you know how to print .ps files (``lpr -Pprinter ps#.ps'')
 \setlength{\textheight}{8.5in}
 
 \addbibresource{bibliography.bib}
+\graphicspath{ {mnist/mistakeims/} }
 
 \newcommand{\handout}[5]{
    \renewcommand{\thepage}{#1, Page \arabic{page}}
@@ -146,6 +148,14 @@ I assume you know how to print .ps files (``lpr -Pprinter ps#.ps'')
 
 \newcommand{\mexp}{\mathrm{e}}
 
+\makeatletter
+\newtoks\@tabtoks
+\newcommand\addtabtoks[1]{\global\@tabtoks\expandafter{\the\@tabtoks#1}}
+\newcommand\eaddtabtoks[1]{\edef\mytmp{#1}\expandafter\addtabtoks\expandafter{\mytmp}}
+\newcommand*\resettabtoks{\global\@tabtoks{}}
+\newcommand*\printtabtoks{\the\@tabtoks}
+\makeatother
+
 
 \begin{document}
 
@@ -222,7 +232,7 @@ Here, we consider the components of $X_{in}$ to be independent of one another. T
 
 \ifnum\me<2
 \begin{solution}
-\\We performed experiments on the MNIST dataset trying to classify on it using a 4 layered network. We achieved an accuracy of $99.4\%$ on the test set with our model. A detailed explanation of our experiments is mentioned below:
+\\We performed experiments on the MNIST dataset trying to classify on it using a 4 layered network. We achieved an accuracy of $99.36\%$ on the test set with our model. A detailed explanation of our experiments is mentioned below:
 \begin{enumerate}
 \item Overview of the network
 \begin{itemize}
@@ -242,7 +252,7 @@ Here, we consider the components of $X_{in}$ to be independent of one another. T
 \item Translation of $[-2,2]$ pixels in either direction.
 \end{enumerate}
 \item Testing:
-\\At each epoch of training the model was tested on the cross-validation set. This was done to identify the stopping criteria. The early stopping criteria we use is one of a patience based models. We start with an initial patience level of 20. Then at each epoch , we check to see if the accuracy on the cross-validation set has increased compared to the best model seen earlier. If the improvement is $>1\%$ then we set the patience to twice the current epoch (if not higher already). If the improvement is $<1\%$ then we increase the patience by 2. The training stops when number of epochs = patience. This way we implement an early stopping preventing unnecessary runtime and overfitting.
+\\At each epoch of training the model was tested on the validation set. This was done to identify the stopping criteria. The early stopping criteria we use is one of a patience based models. We start with an initial patience level of 20. Then at each epoch , we check to see if the accuracy on the cross-validation set has increased compared to the best model seen earlier. If the improvement is $>1\%$ then we set the patience to twice the current epoch (if not higher already). If the improvement is $<1\%$ then we increase the patience by 2. The training stops when number of epochs = patience. This way we implement an early stopping preventing unnecessary runtime and overfitting.
 \end{itemize}
 
 \item Experiments and observations:
@@ -290,6 +300,42 @@ We also tried the other losses in the sample code, without getting any conclusiv
 \item Intuition:
 
 \item Results and Remarks:
+As mentioned earlier our model gave an accuracy of $99.36\%$ on the test set. The confusion matrix on the test set is as follows:
+\resettabtoks
+\foreach \i in {1,...,10}
+{
+	\addtabtoks{& \textbf}
+	\eaddtabtoks{\i}
+}
+\begin{table}[H]
+\centering
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|}
+\hline
+\textbf{Classes} 
+\printtabtoks
+& \textbf{Accuracy}
+\\\hline
+\textbf{1}  & 977 &    0 &    0 &    0 &   0 &   0 &   0 &    0 &   2 &    1 & 99.694\% \\\hline	
+\textbf{2}  &   0 & 1134 &    0 &    0 &   0 &   0 &   0 &    1 &   0 &    0 & 99.912\% \\\hline	
+\textbf{3}  &   0 &    1 & 1026 &    1 &   0 &   0 &   0 &    2 &   2 &    0 & 99.419\% \\\hline	
+\textbf{4}  &   0 &    0 &    0 & 1007 &   0 &   2 &   0 &    0 &   1 &    0 & 99.703\% \\\hline	
+\textbf{5}  &   0 &    0 &    0 &    0 & 970 &   0 &   3 &    1 &   1 &    7 & 98.778\% \\\hline	
+\textbf{6}  &   0 &    0 &    0 &    6 &   0 & 885 &   1 &    0 &   0 &    0 & 99.215\% \\\hline	
+\textbf{7}  &   2 &    1 &    0 &    1 &   1 &   4 & 947 &    0 &   2 &    0 & 98.852\% \\\hline	
+\textbf{8}  &   0 &    3 &    4 &    0 &   1 &   1 &   0 & 1016 &   0 &    3 & 98.833\% \\\hline	
+\textbf{9}  &   0 &    0 &    1 &    0 &   0 &   1 &   2 &    0 & 968 &    2 & 99.384\% \\\hline	
+\textbf{10} &   0 &    0 &    0 &    0 &   2 &   1 &   0 &    0 &   1 & 1005 & 99.604\% \\\hline	
+\end{tabular}
+\end{table}
+As we can see from the above table the most confusion happens for cases such as 8 being mistaken for 3 or 0, 7 being mistaken for 1, 6 being mistaken for 4 etc, which are sometimes hard for humans to discern too. Below are the images from the test set that were misclassified.
+\begin{figure}[H]
+\foreach \x in {1,...,65}
+{
+	\includegraphics[scale=1]{mistake\x.jpg}
+}
+\caption{Set of images in test set on which mistakes were made}
+\end{figure}
+As we can see most of these are hard for humans to correctly identify as well. Overall this model has given good results on the MNIST dataset.
 \end{enumerate}
 \end{solution}
 
