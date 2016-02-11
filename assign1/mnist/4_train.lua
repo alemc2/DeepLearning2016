@@ -251,11 +251,17 @@ function train()
       trainLogger:plot()
    end
 
+   saveModel = model:clone()
+   local obj = {
+           model = saveModel:float(),
+           mean = mean,
+           std = std
+   }
    -- save/log current net
-   local filename = paths.concat(opt.save, 'model.net')
+   local filename = paths.concat(opt.save, 'tempmodel.net')
    os.execute('mkdir -p ' .. sys.dirname(filename))
    print('==> saving model to '..filename)
-   torch.save(filename, model)
+   torch.save(filename, obj)
 
    -- next epoch
    confusion:zero()

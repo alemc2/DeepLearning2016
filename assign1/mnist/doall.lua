@@ -47,10 +47,10 @@ cmd:option('-weightDecay', 0, 'weight decay (SGD only)')
 cmd:option('-momentum', 0, 'momentum (SGD only)')
 cmd:option('-t0', 1, 'start averaging at t0 (ASGD only), in nb of epochs')
 cmd:option('-maxIter', 2, 'maximum nb of iterations for CG and LBFGS')
-cmd:option('-patience', 20, 'minimum number of epochs to train for')
+cmd:option('-patience', 200, 'minimum number of epochs to train for')
 cmd:option('-improvementThreshold', 0.999, 'amount to multiply test accuracy to determine significant improvement')
 cmd:option('-patienceIncrease', 2, 'amount to multiply patience by on significant improvement')
-cmd:option('-type', 'float', 'type: double | float | cuda')
+cmd:option('-type', 'cuda', 'type: double | float | cuda')
 cmd:text()
 opt = cmd:parse(arg or {})
 
@@ -107,6 +107,15 @@ while true do
 
       bestAcc = acc
       bestModel = model:clone()
+      local obj = {
+        model = bestModel:float(),
+        mean = mean,
+        std = std
+      }
+      local filename = paths.concat(opt.save, 'model.net')
+      os.execute('mkdir -p ' .. sys.dirname(filename))
+      print('==> saving final model to '..filename)
+      torch.save(filename, obj)
    end
 
    print('Best Model accuracy is ' .. bestAcc)
@@ -118,13 +127,3 @@ while true do
       print('==> patience: ' .. patience)
    end
 end
-
-obj = {
-        model = bestModel,
-        mean = mean,
-        std = std
-}
-local filename = paths.concat(opt.save, 'model.net')
-os.execute('mkdir -p ' .. sys.dirname(filename))
-print('==> saving final model to '..filename)
-torch.save(filename, obj)
