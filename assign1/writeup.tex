@@ -42,6 +42,7 @@ I assume you know how to print .ps files (``lpr -Pprinter ps#.ps'')
 \usepackage{amssymb, gensymb}
 \usepackage{mathtools}
 \usepackage{clrscode3e}
+\usepackage{longtable}
 \usepackage{tikz}
 \usepackage{bm}
 \usepackage{hyperref}
@@ -231,31 +232,71 @@ Here, we consider the components of $X_{in}$ to be independent of one another. T
 \newproblem{Torch (MNIST Handwritten Digit Recognition)}
 
 \ifnum\me<2
-\begin{solution}
-\\We performed experiments on the MNIST dataset trying to classify on it using a 4 layered network. We achieved an accuracy of $99.36\%$ on the test set with our model. A detailed explanation of our experiments is mentioned below:
+\begin{solution}\\
+We performed experiments on the MNIST dataset to classify images into the digits they represent. Our final submission uses a fairly simple convolutional neural network, which achieves an accuracy of $99.64\%$ on the MNIST test set.
+
+Since MNIST is a simple dataset, we decided not to complicate our model, but to force it to generalize well by randomly distorting the training images during each epoch and adding in a dropout layer.
+
 \begin{enumerate}
-\item Overview of the network
+\item \textbf{Overview of the network}
 \begin{itemize}
-\item Dataset and partitioning:
-\\We used the MNIST handwritten character dataset for these experiments. It consists of $60,000$ data points in the training set and another $10,000$ data points in the test set. For the purpose of our experiments we split the training set as $55,000$ points for training the network and the remaining $5,000$ points for tuning the parameters using cross-validation.
-\\The data that was loaded was normalized to have zero mean and unit variance. The parameters used for this normalization were stored and used to normalize the cross-validation and test set as well.
+\item \textbf{Dataset and partitioning:}
 
-\item Model and Loss Function:
-\\The model starts with a convolution layer of $5 \times 5$ filter bank of size $32$. This is followed by a ReLu layer and a pooling layer. This is followed by another convolution layer of $5 \times 5$ filter bank of size $64$ which is followed by another set of ReLu and pooling layers. Then it is followed by a linear layer mapping to 1024 points which is terminated by a dropout layer and another linear layer resulting in 10 outputs. Using the conventions defined in \cite{MCDNN} we can write it as $1 \times 32 \times 32 - 32C5 - ReLU - MP2 - 64C5 - ReLU - MP2 - 1024N - ReLU - Dropout - 10N$.
-\\The Loss function we used was the negative log likelihood measure.
+We used the MNIST handwritten character dataset for these experiments. It consists of 60,000 data points in the training set and another 10,000 data points in the test set. For the purpose of our experiments we split the training set as 55,000 points for training the network (we refer to this set as the training set in this writeup) and the remaining 5,000 points for testing and validation (we refer to this set as the validation set in this writeup).
 
-\item Training and distortions:
-\\While training we make use of the ADAM optimizer \cite{ADAM} for the stochastic gradient based optimization. The hyperparameters used for ADAM are: learning rate $\alpha = 0.001$, exponential decay rates $\beta_1 = 0.9, \beta_2 = 0.999$ and the fuzz factor $\epsilon = 10^{-8}$. At each epoch we also introduce some distortions to increase the number of training images. This allows for training the network with many weights, making them insensitive to in-class variability. The distortions introduced are a combination of rotation, shear and translation with the following parameters:
+The loaded data is normalized to have zero mean and unit variance. The parameters used for this normalization are stored and used to normalize the validation and test set as well.
+
+\item \textbf{Model and loss:}
+
+The model starts with a convolution layer with window size $5 \times 5$ with a filter bank of size $32$. This is followed by a ReLU non-linearity and a max-pooling layer. This is followed by another convolution layer of window size $5 \times 5$ with a filter bank of size $64$, followed by another set of ReLU and max-pooling layers. We then flattern the outputs of the max-pooling layer and do a 1-to-1 convolution to 1024 channels. This is then followed by a ReLU non-linearity and a dropout with a drop probability of $0.5$. Finally, we have another 1-to-1 convolution mapping the 1024 channels to 10 output channels, one for each digit. The precise network structure as displayed by Torch is as follows:
+
+\begin{verbatim}
+nn.Sequential {
+  [input -> (1) -> (2) -> (3) -> (4) -> (5) -> (6) -> (7) -> (8) -> (9)
+-> (10) -> (11) -> (12) -> output]
+  (1): nn.SpatialConvolutionMM(1 -> 32, 5x5)
+  (2): nn.ReLU
+  (3): nn.SpatialMaxPooling(2,2,2,2)
+  (4): nn.SpatialConvolutionMM(32 -> 64, 5x5)
+  (5): nn.ReLU
+  (6): nn.SpatialMaxPooling(2,2,2,2)
+  (7): nn.View
+  (8): nn.Linear(1600 -> 1024)
+  (9): nn.ReLU
+  (10): nn.Dropout(0.500000)
+  (11): nn.Linear(1024 -> 10)
+  (12): nn.LogSoftMax
+}
+\end{verbatim}
+
+The Loss function we use is negative log-likelihood (NLL). Thus, we also have a final logsoftmax layer that outputs the log of the probabilities of each digit, based on which the NLL criterion computes the loss.
+
+\item \textbf{Training and regularization:}
+
+We train our models on our training set of 55,000 points and test them on our validation set of 5,000 points. For our final submission, we make use of the ADAM optimizer \cite{ADAM} for the stochastic gradient based optimization. Details of the hyperparameters used are given in Table \ref{table:optim}.
+
+Furthermore, at each epoch we introduce some distortions to artificially increase the number of training images. This allows for training the network with many weights, while making them insensitive to in-class variability. The distortions introduced are a combination of rotation, shear and translation with the following parameters randomly chosen:
 \begin{enumerate}
 \item Rotation of $[-11.25 \degree,11.25 \degree]$.
 \item Shear on horizontal axis such that ratio of shear with respect to height is $\tan(\beta)$ where $\beta \in [-15\degree , 15\degree]$
-\item Translation of $[-2,2]$ pixels in either direction.
+\item Translation of $[-2,2]$ pixels in each direction.
 \end{enumerate}
-\item Testing:
-\\At each epoch of training the model was tested on the validation set. This was done to identify the stopping criteria. The early stopping criteria we use is one of a patience based models. We start with an initial patience level of 20. Then at each epoch , we check to see if the accuracy on the cross-validation set has increased compared to the best model seen earlier. If the improvement is $>1\%$ then we set the patience to twice the current epoch (if not higher already). If the improvement is $<1\%$ then we increase the patience by 2. The training stops when number of epochs = patience. This way we implement an early stopping preventing unnecessary runtime and overfitting.
+
+We also employ dropout as a regularization strategy. The dropout layer after the ReLU following the flat linear layer of size 1024 randomly drops (makes zero) activations with a probability of 0.5. This helps prevent the model from learning strong correlations between values in layer \texttt{(9)}, which is especially useful since as many as 1024 inputs are fully connected with 10 outputs between the last two linear layers.
+
+At each epoch of training, the model is tested on the validation set. We use an early stopping criteria, which we use as follows:: We start with an initial patience level of 20. At each epoch, we check to see if the accuracy on the validation set has increased as compared to the best model seen so far. If the improvement is $>0.1\%$ then we set the patience to twice the current epoch (if not higher already). If the improvement is positive but $<0.1\%$, and we are almost out of patience, then we increase the patience by 2. The intuition here is that a significant improvement at some epoch suggests that the next significant improvement would likely come after many more epochs if we are farther into training, as compared to earlier on in training (where getting the next significant improvement is likely to happen sooner). The training stops when number of epochs becomes equal to our patience. This strategy helps us prevent unnecessary runtime and overfitting.
+
+
 \end{itemize}
 
-\item Experiments and observations:
+\item \textbf{Experiments and observations:}
+
+We tried experimenting with various network architectures, with performances on the validation set detailed in Table \ref{table:acc}. As can be seen, we started off by replacing the $\tanh$ activations in the default network by ReLU. To prevent the network from learning strong correlations between pixel values at the input and overfitting, we introduced dropout of 0.5 before the first convolution layer. However, we observed a drop in the accuracy. Following that, we tried placing the dropout layer at other positions in the network, and achieved a significant improvement by placing the dropout layer before the first linear layer (after the ReLU following the second convolution). We experimented with a larger convolution window for the first convolution layer, to possibly learn richer lowest level features and added additional fully connected layers after two convolutions. However, the model turned out too expressive and prone to overfitting.
+
+Finally, we decided to artificially increase the number of training examples we have by distorting the training images during each epoch by randomly rotating, translating and shearing them by small amounts. This, used with a modified network structure as shown in the last entry of the table, gave us our best validation accuracy. We thus used that model for our Kaggle submission.
+
+We also experimented with other intermediate network structures (and image distortions such as dilation, erosion and elastic distortion) without waiting for the early stopping to terminate, and thus we have not reported those in Table \ref{table:acc}.
+
 \begin{table}[h]
 \centering
 \begin{tabular}{| l | l |}
@@ -264,23 +305,19 @@ Here, we consider the components of $X_{in}$ to be independent of one another. T
 default & 0.980 \\ \hline
 tanh to relu (r) & 0.983 \\ \hline
 (r)+ dropout at input & 0.973 \\ \hline
-(r)+ spatial dropout at input & 0.979 \\ \hline
-(r)+ spatial dropout after first conv layer relu & 0.984 \\ \hline
+(r)+ dropout after first conv layer relu & 0.984 \\ \hline
 (r)+ dropout before first linear layer (d) & 0.991 \\ \hline
-(r)+ spatial dropout after second conv layer relu (e) & 0.992 \\ \hline
-(d,e)& 0.993 \\ \hline
-(d,e)+ lower spacial dropout (e) from 0.5 to 0.25 & 0.991 \\ \hline
-(d,e)+ lower dropout (d) from 0.5 to 0.25 & 0.993 \\ \hline
-(d,e)+ lower both dropouts from 0.5 to 0.25 & 0.993 \\ \hline
-(d,e)+ increase both dropouts from 0.5 to 0.6 & 0.983 \\ \hline
-(d,e)+ conv 7$\times$7, 5$\times$5, new linear layer 1024 $\to$ 512 $\to$ 128 $\to$ 10 & 0.991 \\ \hline
-(d)+ random image rotations and translations & 0.993 \\ \hline
+(d)+ lower dropout from 0.5 to 0.25 & 0.993 \\ \hline
+(d)+ conv 7$\times$7, 5$\times$5, new linear layer 1024 $\to$ 512 $\to$ 128 $\to$ 10 & 0.991 \\ \hline
+(d)+ random image rotations and translations & 0.994 \\ \hline
 (d)+ random image rotations, translations, shearing (s) & 0.992 \\ \hline
-(s)+ conv(32 $\to$ 64) $\to$ linear(1024 $\to$ 10) (f) & \textbf{0.994} \\ \hline
+(s)+ conv(32 $\to$ 64) $\to$ linear(1024 $\to$ 10), dropout before output & \textbf{0.996} \\ \hline
 \end{tabular}
 \caption{Validation accuracies with different network structures.}
 \label{table:acc}
 \end{table}
+
+Table \ref{table:optim} shows the performance of four optimizers that we tried with the hyperparameters used. The accuracies represent the best validation accuracy we achieved using the particular optimizer before the training process terminated as a result of our early stopping criterion. The hyperparameters are not tuned at the moment, but we can improve our performance by doing so.
 
 \begin{table}[h]
 \centering
@@ -288,21 +325,23 @@ tanh to relu (r) & 0.983 \\ \hline
 \hline
 \textbf{Optimizer} & \textbf{Hyperparameters} & \textbf{Accuracy} \\ \hline
 SGD & LR = $10^{-3}$, wt. decay = 0, momentum = 0, LR decay = $10^{-7}$ & 0.983 \\ \hline
-ADAM & LR = $10^{-3}$, $\beta_1$ = 0.9, $\beta_2$ = 0.999, $\epsilon$ = $10^{-8}$ & \textbf{0.994} \\ \hline
+ADAM & LR = $10^{-3}$, $\beta_1$ = 0.9, $\beta_2$ = 0.999, $\epsilon$ = $10^{-8}$ & \textbf{0.996} \\ \hline
 ADAGRAD & LR = $10^{-3}$ & 0.989 \\ \hline
-ADADELTA & & \textbf{0.994} \\ \hline
+ADADELTA & & 0.994 \\ \hline
 \end{tabular}
 \caption{Validation accuracies for structure (f) from Table \ref{table:acc} using different optimizers.}
+\label{table:optim}
 \end{table}
 
-We also tried the other losses in the sample code, without getting any conclusive difference.
+Right now, we use the negative log-likelihood loss for classification. We also tried other losses such as the margin loss and mean squared error loss, without getting any conclusive difference in accuracy.
 
-\item Intuition:
+\newpage %remove if not needed
+\item \textbf{Results and remarks:}
 
-\item Results and Remarks:
-As mentioned earlier our model gave an accuracy of $99.36\%$ on the test set. The confusion matrix on the test set is as follows:
+Our model trained on our training set of 55,000 points, validated on 5,000 points, gave an accuracy of $99.64\%$ on the test set of 10,000 points. Table \ref{table:confmatrix} illustrates the confusion matrix on the test set using our model.
+
 \resettabtoks
-\foreach \i in {1,...,10}
+\foreach \i in {0,...,9}
 {
 	\addtabtoks{& \textbf}
 	\eaddtabtoks{\i}
@@ -315,28 +354,82 @@ As mentioned earlier our model gave an accuracy of $99.36\%$ on the test set. Th
 \printtabtoks
 & \textbf{Accuracy}
 \\\hline
-\textbf{1}  & 977 &    0 &    0 &    0 &   0 &   0 &   0 &    0 &   2 &    1 & 99.694\% \\\hline	
-\textbf{2}  &   0 & 1134 &    0 &    0 &   0 &   0 &   0 &    1 &   0 &    0 & 99.912\% \\\hline	
-\textbf{3}  &   0 &    1 & 1026 &    1 &   0 &   0 &   0 &    2 &   2 &    0 & 99.419\% \\\hline	
-\textbf{4}  &   0 &    0 &    0 & 1007 &   0 &   2 &   0 &    0 &   1 &    0 & 99.703\% \\\hline	
-\textbf{5}  &   0 &    0 &    0 &    0 & 970 &   0 &   3 &    1 &   1 &    7 & 98.778\% \\\hline	
-\textbf{6}  &   0 &    0 &    0 &    6 &   0 & 885 &   1 &    0 &   0 &    0 & 99.215\% \\\hline	
-\textbf{7}  &   2 &    1 &    0 &    1 &   1 &   4 & 947 &    0 &   2 &    0 & 98.852\% \\\hline	
-\textbf{8}  &   0 &    3 &    4 &    0 &   1 &   1 &   0 & 1016 &   0 &    3 & 98.833\% \\\hline	
-\textbf{9}  &   0 &    0 &    1 &    0 &   0 &   1 &   2 &    0 & 968 &    2 & 99.384\% \\\hline	
-\textbf{10} &   0 &    0 &    0 &    0 &   2 &   1 &   0 &    0 &   1 & 1005 & 99.604\% \\\hline	
+\textbf{0} & 979 & 0 & 0 & 0 & 0 & 0 & 0 & 1 & 0 & 0 & 99.898\% \\\hline
+\textbf{1} & 0 & 1132 & 0 & 0 & 0 & 0 & 1 & 2 & 0 & 0 & 99.736\% \\\hline
+\textbf{2} & 0 & 0 & 1030 & 0 & 0 & 0 & 0 & 2 & 0 & 0 & 99.806\% \\\hline
+\textbf{3} & 0 & 0 & 1 & 1009 & 0 & 0 & 0 & 0 & 0 & 0 & 99.901\% \\\hline
+\textbf{4} & 0 & 0 & 0 & 0 & 980 & 0 & 0 & 0 & 0 & 2 & 99.796\% \\\hline
+\textbf{5} & 1 & 0 & 0 & 2 & 0 & 888 & 1 & 0 & 0 & 0 & 99.552\% \\\hline
+\textbf{6} & 1 & 1 & 0 & 0 & 0 & 1 & 955 & 0 & 0 & 0 & 99.687\% \\\hline
+\textbf{7} & 0 & 2 & 3 & 1 & 0 & 0 & 0 & 1021 & 0 & 1 & 99.319\% \\\hline
+\textbf{8} & 0 & 0 & 1 & 0 & 0 & 1 & 0 & 0 & 972 & 0 & 99.795\% \\\hline
+\textbf{9} & 0 & 0 & 0 & 1 & 9 & 1 & 0 & 0 & 0 & 998 & 98.910\% \\\hline
 \end{tabular}
+\caption{Confusion matrix for the test set.}
+\label{table:confmatrix}
 \end{table}
-As we can see from the above table the most confusion happens for cases such as 8 being mistaken for 3 or 0, 7 being mistaken for 1, 6 being mistaken for 4 etc, which are sometimes hard for humans to discern too. Below are the images from the test set that were misclassified.
-\begin{figure}[H]
-\foreach \x in {1,...,65}
-{
-	\includegraphics[scale=1]{mistake\x.jpg}
-}
-\caption{Set of images in test set on which mistakes were made}
-\end{figure}
-As we can see most of these are hard for humans to correctly identify as well. Overall this model has given good results on the MNIST dataset.
+
+As we can see, most of the confusion happens for cases such as 9 being mistaken for 4, or 7 being mistaken for 2 or 1, and so on. Table \ref{table:incorrect} outlines all the 36 samples in the test set of 10,000 where our model makes a mistake. As we can see, many of these are also hard for humans to correctly identify!
 \end{enumerate}
+
+\begin{longtable}[h]{| c | c | c |}
+\caption{Set of images in the test set on which mistakes were made.} \\
+
+\hline \multicolumn{1}{|c|}{\textbf{Sample}} & \multicolumn{1}{c|}{\textbf{True label}} & \multicolumn{1}{c|}{\textbf{Predicted label}} \\ \hline 
+\endfirsthead
+
+\multicolumn{3}{c}%
+{{\bfseries \tablename\ \thetable{} -- continued from previous page}} \\
+\hline \multicolumn{1}{|c|}{\textbf{Sample}} &
+\multicolumn{1}{c|}{\textbf{True label}} &
+\multicolumn{1}{c|}{\textbf{Predicted label}} \\ \hline 
+\endhead
+
+\hline \multicolumn{3}{|r|}{{Continued on next page}} \\ \hline
+\endfoot
+
+\hline \hline
+\endlastfoot
+
+\hline
+\includegraphics[scale=1]{mistake3.jpg} & 9 & 4 \\ \hline	
+\includegraphics[scale=1]{mistake5.jpg} & 7 & 1 \\ \hline	
+\includegraphics[scale=1]{mistake6.jpg} & 9 & 4 \\ \hline	
+\includegraphics[scale=1]{mistake7.jpg} & 4 & 9 \\ \hline	
+\includegraphics[scale=1]{mistake8.jpg} & 9 & 4 \\ \hline	
+\includegraphics[scale=1]{mistake1.jpg} & 7 & 3 \\ \hline	
+\includegraphics[scale=1]{mistake2.jpg} & 6 & 5 \\ \hline	
+\includegraphics[scale=1]{mistake4.jpg} & 9 & 5 \\ \hline	
+\includegraphics[scale=1]{mistake9.jpg} & 5 & 3 \\ \hline	
+\includegraphics[scale=1]{mistake10.jpg} & 6 & 1 \\ \hline	
+\includegraphics[scale=1]{mistake11.jpg} & 9 & 3 \\ \hline	
+\includegraphics[scale=1]{mistake12.jpg} & 7 & 9 \\ \hline	
+\includegraphics[scale=1]{mistake13.jpg} & 6 & 0 \\ \hline	
+\includegraphics[scale=1]{mistake14.jpg} & 5 & 0 \\ \hline	
+\includegraphics[scale=1]{mistake15.jpg} & 9 & 4 \\ \hline	
+\includegraphics[scale=1]{mistake16.jpg} & 9 & 4 \\ \hline	
+\includegraphics[scale=1]{mistake17.jpg} & 2 & 7 \\ \hline	
+\includegraphics[scale=1]{mistake18.jpg} & 1 & 7 \\ \hline	
+\includegraphics[scale=1]{mistake21.jpg} & 1 & 7 \\ \hline	
+\includegraphics[scale=1]{mistake19.jpg} & 9 & 4 \\ \hline	
+\includegraphics[scale=1]{mistake20.jpg} & 3 & 2 \\ \hline	
+\includegraphics[scale=1]{mistake22.jpg} & 9 & 4 \\ \hline	
+\includegraphics[scale=1]{mistake23.jpg} & 9 & 4 \\ \hline	
+\includegraphics[scale=1]{mistake24.jpg} & 7 & 2 \\ \hline	
+\includegraphics[scale=1]{mistake25.jpg} & 5 & 3 \\ \hline	
+\includegraphics[scale=1]{mistake26.jpg} & 7 & 1 \\ \hline	
+\includegraphics[scale=1]{mistake27.jpg} & 0 & 7 \\ \hline	
+\includegraphics[scale=1]{mistake28.jpg} & 8 & 2 \\ \hline	
+\includegraphics[scale=1]{mistake29.jpg} & 1 & 6 \\ \hline	
+\includegraphics[scale=1]{mistake30.jpg} & 7 & 2 \\ \hline	
+\includegraphics[scale=1]{mistake31.jpg} & 9 & 4 \\ \hline	
+\includegraphics[scale=1]{mistake32.jpg} & 8 & 5 \\ \hline	
+\includegraphics[scale=1]{mistake33.jpg} & 4 & 9 \\ \hline	
+\includegraphics[scale=1]{mistake34.jpg} & 7 & 2 \\ \hline	
+\includegraphics[scale=1]{mistake35.jpg} & 2 & 7 \\ \hline	
+\includegraphics[scale=1]{mistake36.jpg} & 5 & 6 \\ \hline	
+\label{table:incorrect}
+\end{longtable}
 \end{solution}
 
 \fi
