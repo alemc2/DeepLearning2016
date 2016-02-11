@@ -180,19 +180,20 @@ print('Accuracy was ' .. acc)
 
 ----------------------------------------------------------------------
 -- Verify that things going into csv is correct
-csvacc = testData.labels:eq(torch.Tensor(pred)[{{},{2}}]:byte()):float():mean()
+csvacc = testData.labels:eq(torch.Tensor(pred)[{{},2}]:byte()):float():mean()
 print('Accuracy from values to be stored in csv is ' .. csvacc)
 
 -- save mistake images
-mistakeindex = testData.labels:ne(torch.Tensor(pred)[{{},{2}}]:byte())
+mistakeindex = testData.labels:ne(torch.Tensor(pred)[{{},2}]:byte())
 indices = torch.linspace(1,mistakeindex:size(1),mistakeindex:size(1)):long()
 selected = indices[mistakeindex]
 if itorch then
     itorch.image(testData.data:index(1,selected))
 end
-if opt.saveimage==1 then
+if opt.saveimage~=0 then
     for i = 1,selected:size(1) do
-        image.save(opt.save..'/mistake'..i..'.jpg',testData.data[{selected[i]}])
+        image.save(opt.save..'/mistake'..i..'.jpg',testData.data[selected[i]])
+        print('\\includegraphics[scale=1]{mistake'..i..'.jpg} & '..(testData.labels[selected[i]] - 1) .. ' & ' .. (pred[selected[i]][2] - 1) ..' \\\\ \\hline')
     end
 end
 
