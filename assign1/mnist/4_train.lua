@@ -166,12 +166,31 @@ function train()
          input[{1,{},{}}]:mul(std)
          input[{1,{},{}}]:add(mean)
 
-         -- Rotate between -15 and 15 degrees
-         input = image.rotate(input, torch.rand(1):mul(math.pi/8):add(-math.pi/16)[1])
-         -- Shear by tan(-15) and tan(15) degrees
+         -- elastic distortion sigma =4.5-6.5 alpha=[0-36]
          local warpfield = torch.Tensor(2,height,width)
          local grid_y = torch.ger(torch.linspace(0,height,height),torch.ones(width))
          local grid_x = torch.ger(torch.ones(height),torch.linspace(0,width,width))
+         local displacement_x = torch.Tensor(height,width):randn(height,width)
+         local displacement_y = torch.Tensor(height,width):randn(height,width)
+         local sigma = torch.randn(1):add(5.5)[1]
+         local gauss = image.gaussian(5,sigma,1)
+         displacement_x = image.convolve(displacement_x,gauss,"same")
+         displacement_y = image.convolve(displacement_y,gauss,"same")
+         local alpha = torch.random(0,6)^2
+         -- normalize the displacements to 1
+         displacement_x:mul(alpha/displacement_x:norm());
+         displacement_y:mul(alpha/displacement_y:norm());
+         grid_x:add(displacement_x);
+         grid_y:add(displacement_y);
+         warpfield[1] = grid_y
+         warpfield[2] = grid_x
+         input = image.warp(input,warpfield,'bilinear',false)
+         -- Rotate between -15 and 15 degrees
+         input = image.rotate(input, torch.rand(1):mul(math.pi/8):add(-math.pi/16)[1])
+         -- Shear by tan(-15) and tan(15) degrees
+         warpfield = torch.Tensor(2,height,width)
+         grid_y = torch.ger(torch.linspace(0,height,height),torch.ones(width))
+         grid_x = torch.ger(torch.ones(height),torch.linspace(0,width,width))
          local beta = torch.rand(1):mul(math.pi/6):add(-math.pi/12)[1]
          local displacement = torch.mul(grid_y,math.tan(beta))
          displacement:add(-height*math.tan(beta)/2);
