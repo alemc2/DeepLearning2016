@@ -233,7 +233,7 @@ Here, we consider the components of $X_{in}$ to be independent of one another. T
 
 \ifnum\me<2
 \begin{solution}\\
-We performed experiments on the MNIST dataset to classify images into the digits they represent. Our final submission uses a fairly simple convolutional neural network, which achieves an accuracy of $99.64\%$ on the MNIST test set.
+We performed experiments on the MNIST dataset \cite{mnist} to classify images into the digits they represent. Our final submission uses a fairly simple convolutional neural network, which achieves an accuracy of $99.64\%$ on the MNIST test set.
 
 Since MNIST is a simple dataset, we decided not to complicate our model, but to force it to generalize well by randomly distorting the training images during each epoch and adding in a dropout layer.
 
@@ -275,7 +275,7 @@ The Loss function we use is negative log-likelihood (NLL). Thus, we also have a 
 
 We train our models on our training set of 55,000 points and test them on our validation set of 5,000 points. For our final submission, we make use of the ADAM optimizer \cite{ADAM} for the stochastic gradient based optimization. Details of the hyperparameters used are given in Table \ref{table:optim}.
 
-Furthermore, at each epoch we introduce some distortions to artificially increase the number of training images. This allows for training the network with many weights, while making them insensitive to in-class variability. The distortions introduced are a combination of rotation, shear and translation with the following parameters randomly chosen:
+Furthermore, at each epoch we introduce some distortions to artificially increase the number of training images similar to \cite{bestprac,deepbig}. This allows for training the network with many weights, while making them insensitive to in-class variability. The distortions introduced are a combination of rotation, shear and translation with the following parameters randomly chosen:
 \begin{enumerate}
 \item Rotation of $[-11.25 \degree,11.25 \degree]$.
 \item Shear on horizontal axis such that ratio of shear with respect to height is $\tan(\beta)$ where $\beta \in [-15\degree , 15\degree]$
@@ -373,7 +373,7 @@ As we can see, most of the confusion happens for cases such as 9 being mistaken 
 \end{enumerate}
 
 \begin{longtable}[h]{| c | c | c |}
-\caption{Set of images in the test set on which mistakes were made.} \\
+\caption{Set of images in the test set on which mistakes were made.} \label{table:incorrect} \\
 
 \hline \multicolumn{1}{|c|}{\textbf{Sample}} & \multicolumn{1}{c|}{\textbf{True label}} & \multicolumn{1}{c|}{\textbf{Predicted label}} \\ \hline 
 \endfirsthead
@@ -388,7 +388,6 @@ As we can see, most of the confusion happens for cases such as 9 being mistaken 
 \hline \multicolumn{3}{|r|}{{Continued on next page}} \\ \hline
 \endfoot
 
-\hline \hline
 \endlastfoot
 
 \hline
@@ -428,8 +427,8 @@ As we can see, most of the confusion happens for cases such as 9 being mistaken 
 \includegraphics[scale=1]{mistake34.jpg} & 7 & 2 \\ \hline	
 \includegraphics[scale=1]{mistake35.jpg} & 2 & 7 \\ \hline	
 \includegraphics[scale=1]{mistake36.jpg} & 5 & 6 \\ \hline	
-\label{table:incorrect}
 \end{longtable}
+
 \end{solution}
 
 \fi
