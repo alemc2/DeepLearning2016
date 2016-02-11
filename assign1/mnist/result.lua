@@ -8,6 +8,7 @@ require 'xlua'    -- xlua provides useful tools, like progress bars
 require 'optim'   -- an optimization package, for online and batch methods
 require 'nn'
 require 'csvigo'
+require 'image'
 
 -----------------------------------------------------------------
 
@@ -23,6 +24,7 @@ cmd:option('-seed', 1, 'fixed input seed for repeatable experiments')
 cmd:option('-threads', 2, 'number of threads')
 cmd:option('-type', 'float', 'type: double | float | cuda')
 cmd:option('-save', 'results', 'subdirectory to save/log experiments in')
+cmd:option('-saveimage', 0, '1-generate 0-dont')
 -- data:
 cmd:option('-size', 'full', 'how many samples do we load: small | full')
 cmd:option('-model', 'results/model.net', 'relative path of model file: results/model.net')
@@ -180,6 +182,19 @@ print('Accuracy was ' .. acc)
 -- Verify that things going into csv is correct
 csvacc = testData.labels:eq(torch.Tensor(pred)[{{},{2}}]:byte()):float():mean()
 print('Accuracy from values to be stored in csv is ' .. csvacc)
+
+-- save mistake images
+mistakeindex = testData.labels:ne(torch.Tensor(pred)[{{},{2}}]:byte())
+indices = torch.linspace(1,mistakeindex:size(1),mistakeindex:size(1)):long()
+selected = indices[mistakeindex]
+if itorch then
+    itorch.image(testData.data:index(1,selected))
+end
+if opt.saveimage==1 then
+    for i = 1,selected:size(1) do
+        image.save(opt.save..'/mistake'..i..'.jpg',testData.data[{selected[i]}])
+    end
+end
 
 -- save csv
 table.insert(pred,1,{"Id","Prediction"})
