@@ -185,7 +185,7 @@ print('Accuracy from values to be stored in csv is ' .. csvacc)
 
 -- save mistake images
 mistakeindex = testData.labels:ne(torch.Tensor(pred)[{{},2}]:byte())
-indices = torch.linspace(1,mistakeindex:size(1),mistakeindex:size(1)):long()
+indices = torch.round(torch.linspace(1,mistakeindex:size(1),mistakeindex:size(1))):long()
 selected = indices[mistakeindex]
 if itorch then
     itorch.image(testData.data:index(1,selected))
