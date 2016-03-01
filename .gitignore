@@ -1,3 +1,5 @@
 *.pdf
 *.swp
 results/
+assign*/.git/
+assign*/.gitignore
