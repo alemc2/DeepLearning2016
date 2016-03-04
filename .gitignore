@@ -1,5 +1,10 @@
 *.pdf
 *.swp
 results/
-assign*/.git/
-assign*/.gitignore
+*-blx.bib
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.run.xml
