@@ -40,7 +40,7 @@ function unsup.convkmeans(x,k,kw,kh,niter,batchsize,callback,verbose)
   local totalcounts = x.new(k):zero()
      
   -- callback?
-  if callback then callback(0,centroids:reshape(k_size),totalcounts) end
+  if callback then callback(0,centroids:reshape(k_size),torch.ones(k)) end
 
   -- do niter iterations
   for i = 1,niter do
@@ -105,7 +105,7 @@ function unsup.convkmeans(x,k,kw,kh,niter,batchsize,callback,verbose)
 
     -- callback?
     if callback then 
-       local ret = callback(i,centroids:reshape(k_size),totalcounts) 
+       local ret = callback(i,centroids:reshape(k_size),counts) 
        if ret then break end
     end
   end
