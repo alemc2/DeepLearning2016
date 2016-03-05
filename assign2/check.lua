@@ -69,4 +69,9 @@ resized_kernels = dispfilters(10,kernels,counts)
 
 sfile = 'models/ckmeans_'..ncentroids..'.t7'
 print('==> saving centroids to disk: ' .. sfile)
-torch.save(sfile, resized_kernels)
+obj = {
+    resized_kernels = resized_kernels,
+    kernels = kernels,
+    counts = counts
+}
+torch.save(sfile, obj)
