@@ -35,7 +35,7 @@ for i = 1,numPatches do
 end
 
 print(c.blue "==> find clusters")
-ncentroids = 1600
+ncentroids = 96
 
 --Define a callback to display filters at each iteration
 function dispfilters (step,c_kernels,c_counts)
@@ -53,7 +53,7 @@ function dispfilters (step,c_kernels,c_counts)
    c_counts  = c_counts[{{1,j}}]
    variance  = variance[{{1,j}}]
    
-   local _,varind = torch.sort(variance)
+   local _,varind = torch.sort(variance,1,true)
    --print("Counts for iteration "..step)
    --print(c_counts)
    if itorch then
