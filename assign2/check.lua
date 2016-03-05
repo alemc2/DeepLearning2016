@@ -21,13 +21,13 @@ print(c.blue "==> extract windows")
 data_dim = {3,96,96}
 kSize = 22
 trsize = 4000
-numPatches = 100000
+numPatches = 400000
 patches = torch.zeros(numPatches, data_dim[1], kSize, kSize)
 for i = 1,numPatches do
    xlua.progress(i,numPatches)
    local r = torch.random(data_dim[2] - kSize + 1)
    local c = torch.random(data_dim[3] - kSize + 1)
-   patches[i] = unlabeled_data[{math.fmod(i-1,numPatches)+1,{},{r,r+kSize-1},{c,c+kSize-1}}]
+   patches[i] = unlabeled_data[{((i-1) % 100000)+1,{},{r,r+kSize-1},{c,c+kSize-1}}]
    --patches[i] = provider.trainData.data[{math.fmod(i-1,trsize)+1,{},{r,r+kSize-1},{c,c+kSize-1}}]
    --normalization may not be needed here as done patch level. Need to experiment.
    --patches[i] = patches[i]:add(-patches[i]:mean())
@@ -62,7 +62,7 @@ function dispfilters (step,c_kernels,c_counts)
    return c_kernels
 end
 
-kernels, counts = unsup.ckmeans(patches, ncentroids, 11, 11, 10, 10000, dispfilters, true)
+kernels, counts = unsup.ckmeans(patches, ncentroids, 11, 11, 15, 10000, dispfilters, true)
 
 print("==> select distinct features")
 resized_kernels = dispfilters(10,kernels,counts)
