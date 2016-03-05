@@ -103,6 +103,7 @@ function unsup.convkmeans(provider,k, nch, kw, kh, nsamples, niter, batchsize, c
        for win_num = 1,m do
            S[win_num][labels[1][pooled_indices[win_num]]] = val[1][pooled_indices[win_num]]
            batch_patch[win_num] = batch[pooled_indices[win_num]]
+           counts[labels[1][pooled_indices[win_num]]] = counts[labels[1][pooled_indices[win_num]]] + 1
        end
        summation:add( S:t() * batch_patch )
     end
