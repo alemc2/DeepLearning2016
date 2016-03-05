@@ -1,7 +1,7 @@
 require 'xlua'
 require 'optim'
 dofile './provider.lua'
-dofile './convkmeans.lua'
+dofile './ckmeans.lua'
 local c = require 'trepl.colorize'
 
 print(c.blue '==>' ..' loading data')
@@ -19,7 +19,7 @@ collectgarbage()
 
 print(c.blue "==> extract windows")
 data_dim = {3,96,96}
-kSize = 10
+kSize = 22
 trsize = 4000
 numPatches = 100000
 patches = torch.zeros(numPatches, data_dim[1], kSize, kSize)
@@ -27,7 +27,7 @@ for i = 1,numPatches do
    xlua.progress(i,numPatches)
    local r = torch.random(data_dim[2] - kSize + 1)
    local c = torch.random(data_dim[3] - kSize + 1)
-   patches[i] = unlabeled_data[{math.fmod(i-1,trsize)+1,{},{r,r+kSize-1},{c,c+kSize-1}}]
+   patches[i] = unlabeled_data[{math.fmod(i-1,numPatches)+1,{},{r,r+kSize-1},{c,c+kSize-1}}]
    --patches[i] = provider.trainData.data[{math.fmod(i-1,trsize)+1,{},{r,r+kSize-1},{c,c+kSize-1}}]
    --normalization may not be needed here as done patch level. Need to experiment.
    --patches[i] = patches[i]:add(-patches[i]:mean())
@@ -57,12 +57,12 @@ function dispfilters (step,c_kernels,c_counts)
    --print("Counts for iteration "..step)
    --print(c_counts)
    if itorch then
-       itorch.image(c_kernels:index(1,varind[{{1,math.min(50,(#varind)[1])}}]))
+       itorch.image(c_kernels:index(1,varind[{{1,math.min(96,(#varind)[1])}}]))
    end
    return c_kernels
 end
 
-kernels, counts = unsup.convkmeans(patches, ncentroids, 5, 5, 10, 1000, dispfilters, true)
+kernels, counts = unsup.ckmeans(patches, ncentroids, 11, 11, 10, 10000, dispfilters, true)
 
 print("==> select distinct features")
 resized_kernels = dispfilters(10,kernels,counts)

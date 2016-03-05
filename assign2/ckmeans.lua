@@ -69,8 +69,10 @@ function unsup.ckmeans(x, k, kh, kw, niter, batchsize, callback, verbose)
          local m = lasti - i + 1
 
          -- k-means step, on minibatch
-         local batch_x = unsup.zca_whiten(x[{ {i,lasti} }])
+         local batch_x = x[{ {i,lasti} }]
          local batch = x.new(m, ndims)
+         local val = x.new(m,1)
+         local labels = x.new(m,1)
          for j = 1,m do
             local patches = x.new((kw+1)*(kh+1), ndims)
             for h = 1,kh+1 do
@@ -78,22 +80,30 @@ function unsup.ckmeans(x, k, kh, kw, niter, batchsize, callback, verbose)
                   patches[1+((h-1)*(kw+1))+(w-1)] = batch_x[{j, {}, {h,h+kh-1}, {w,w+kw-1}}]:reshape(ndims)
                end
             end
+            -- normalize patches
+            mean = patches:mean(2)
+            std = (patches:var(2)+10):sqrt()
+            for j = 1, ndims do
+               patches[{{}, {j}}]:add(-mean)
+               patches[{{}, {j}}]:cdiv(std)
+            end
+            -- whiten
+            patches = unsup.zca_whiten(patches, nil, nil, nil, 1e-4)
+
             local patches_t = patches:t()
             local tmp = centroids * patches_t
             for n = 1,(#patches)[1] do
                tmp[{ {},n }]:add(-1,c2)
             end
-            local val,index1 = max(tmp,1)
-            local val2,index = max(val,2)
-            batch[j] = patches[index[{1,1}]]
+            local val1,index1 = max(tmp,1)
+            local val2,index2 = max(val1,2)
+            val[j] = val2[1][1]
+            labels[j] = index1[1][index2[1][1]]
+            batch[j] = patches[index2[1][1]]
          end
 
-         local batch_t = batch:t()
-         local tmp = centroids * batch_t
-         for n = 1,(#batch)[1] do
-            tmp[{ {},n }]:add(-1,c2)
-         end
-         local val,labels = max(tmp,1)
+         val = val:t()
+         labels = labels:t()
 
          -- count examplars per template
          local S = x.new(m,k):zero()
@@ -116,9 +126,10 @@ function unsup.ckmeans(x, k, kh, kw, niter, batchsize, callback, verbose)
 
       -- callback?
       if callback then 
-         local ret = callback(i,centroids:reshape(k_size),totalcounts) 
+         local ret = callback(i,centroids:reshape(k_size),counts) 
          --if ret then break end
       end
+      collectgarbage()
    end
 
    -- done
