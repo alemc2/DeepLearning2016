@@ -10,7 +10,7 @@ function unsup.convkmeans(provider,k, nch, kw, kh, nsamples, niter, batchsize, c
   kh = kh or error('missing argument: ' .. help)
   nsamples = nsamples or error('missing argument: ' .. help)
   niter = niter or 1
-  batchsize = batchsize or math.min(1000, (#x)[1])
+  batchsize = batchsize or math.min(1000, nsamples)
   
   -- resize data
   local k_size = torch.LongStorage(4)
@@ -28,11 +28,11 @@ function unsup.convkmeans(provider,k, nch, kw, kh, nsamples, niter, batchsize, c
   local ndims = nch*kh*kw
    
   -- initialize means
-  local centroids = x.new(k,ndims):normal()
+  local centroids = torch.Tensor(k,ndims):normal()
   for i = 1,k do
      centroids[i]:div(centroids[i]:norm())
   end
-  local totalcounts = x.new(k):zero()
+  local totalcounts = torch.Tensor(k):zero()
      
   -- callback?
   if callback then callback(0,centroids:reshape(k_size),torch.ones(k)) end
@@ -44,8 +44,8 @@ function unsup.convkmeans(provider,k, nch, kw, kh, nsamples, niter, batchsize, c
     if verbose then xlua.progress(i,niter) end
 
     -- init some variables
-    local summation = x.new(k,ndims):zero()
-    local counts = x.new(k):zero()
+    local summation = torch.Tensor(k,ndims):zero()
+    local counts = torch.Tensor(k):zero()
 
     -- process batch
     for i = 1,nsamples,batchsize do
@@ -99,7 +99,7 @@ function unsup.convkmeans(provider,k, nch, kw, kh, nsamples, niter, batchsize, c
        --end
 
        -- count examplars per template
-       local S = x.new(m,k):zero()
+       local S = torch.Tensor(m,k):zero()
        for win_num = 1,m do
            S[win_num][labels[1][pooled_indices[win_num]]] = val[1][pooled_indices[win_num]]
            batch_patch[win_num] = batch[pooled_indices[win_num]]
