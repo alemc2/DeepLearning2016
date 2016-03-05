@@ -106,7 +106,7 @@ function unsup.convkmeans(x,k,kw,kh,niter,batchsize,callback,verbose)
     -- callback?
     if callback then 
        local ret = callback(i,centroids:reshape(k_size),counts) 
-       if ret then break end
+       --if ret then break end
     end
   end
 
