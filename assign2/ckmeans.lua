@@ -11,7 +11,7 @@ require('unsup')
 --
 --   < returns the k means (centroids) + the counts per centroid
 --
-function unsup.ckmeans(x, k, kh, kw, niter, batchsize, callback, verbose)
+function unsup.ckmeans(x, k, kh, kw, stride, niter, batchsize, callback, verbose)
    -- args
    local help = 'centroids,count = unsup.kmeans(Tensor(npoints,dim), k, kh, kw [, niter, batchsize, callback, verbose])'
    x = x or error('missing argument: ' .. help)
@@ -74,12 +74,15 @@ function unsup.ckmeans(x, k, kh, kw, niter, batchsize, callback, verbose)
          local val = x.new(m,1)
          local labels = x.new(m,1)
          for j = 1,m do
-            local patches = x.new((kw+1)*(kh+1), ndims)
-            for h = 1,kh+1 do
-               for w = 1,kw+1 do
-                  patches[1+((h-1)*(kw+1))+(w-1)] = batch_x[{j, {}, {h,h+kh-1}, {w,w+kw-1}}]:reshape(ndims)
+            H = kh+1
+            W = kw+1
+            local patches = x.new(math.floor(H/stride)*math.floor(W/stride), ndims)
+            for h = 1,H,stride do
+               for w = 1,W,stride do
+                  patches[1+(math.floor((h-1)/stride)*(math.floor(W/stride)))+math.floor((w-1)/stride)] = batch_x[{j, {}, {h,h+kh-1}, {w,w+kw-1}}]:reshape(ndims)
                end
             end
+
             -- normalize patches
             mean = patches:mean(2)
             std = (patches:var(2)+10):sqrt()
