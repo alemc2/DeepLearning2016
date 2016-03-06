@@ -46,7 +46,7 @@ ninputs = nfeats*width*height
 
 -- hidden units, filter sizes (for ConvNet only):
 nstates = 96
-filtsize = 7
+filtsize = 13
 poolsize = 2
 
 print '==> construct model'
@@ -67,9 +67,9 @@ model:add(nn.ReLU())
 model:add(nn.SpatialMaxPooling(poolsize,poolsize,poolsize,poolsize))
 
 -- stage 3 : standard 2-layer neural network
-model:add(nn.View(nstates*22*22))
+model:add(nn.View(nstates*21*21))
 --model:add(nn.Dropout(0.5))
-model:add(nn.Linear(nstates*22*22, noutputs))
+model:add(nn.Linear(nstates*21*21, noutputs))
 
 criterion = nn.CrossEntropyCriterion()
 
