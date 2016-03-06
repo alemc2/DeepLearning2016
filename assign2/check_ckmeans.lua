@@ -1,8 +1,9 @@
 require 'xlua'
 require 'optim'
 require 'unsup'
+require 'ckmeans'
 dofile './provider.lua'
-local c = require 'trepl.colorize'
+c = require 'trepl.colorize'
 
 torch.setnumthreads(8)
 
@@ -21,33 +22,44 @@ collectgarbage()
 
 print(c.blue "==> extract windows")
 data_dim = {3,96,96}
-kSize = 11
-trsize = 4000
-numPatches = 300000*64
-patches = torch.zeros(numPatches, data_dim[1], kSize, kSize)
-for i = 1,numPatches do
-   xlua.progress(i,numPatches)
+pSize = 7
+kSize = pSize * 2
+trsize = 100000
+numWindows = 300000
+patches = torch.zeros(numWindows * (pSize + 1) * (pSize + 1), data_dim[1], pSize, pSize)
+for i = 1,numWindows do
+   xlua.progress(i,numWindows)
    local r = torch.random(data_dim[2] - kSize + 1)
    local c = torch.random(data_dim[3] - kSize + 1)
-   patches[i] = unlabeled_data[{((i-1) % 100000)+1,{},{r,r+kSize-1},{c,c+kSize-1}}]
-   --patches[i] = provider.trainData.data[{math.fmod(i-1,trsize)+1,{},{r,r+kSize-1},{c,c+kSize-1}}]
-   --normalization may not be needed here as done patch level. Need to experiment.
-   --patches[i] = patches[i]:add(-patches[i]:mean())
-   --patches[i] = patches[i]:div(math.sqrt(patches[i]:var()+10))
+   window = unlabeled_data[{((i-1) % 100000)+1,{},{r,r+kSize-1},{c,c+kSize-1}}]
+   for j = 1, pSize+1 do
+      for k = 1,pSize+1 do
+         patch = window[{ {}, {j,j+pSize-1}, {k,k+pSize-1} }]
+         patch = patch:float()
+         mean = patch:mean()
+         std = math.sqrt(patch:var()+10)
+         patch:add(-mean)
+         patch:div(std)
+         patches[1+(i-1)*(pSize+1)*(pSize+1)+(j-1)*(pSize+1)+(k-1)] = patch
+      end
+   end
 end
+unlabeled_data = nil
+collectgarbage()
 
--- normalize patches
-patches = patches:resize(numPatches, data_dim[1] * kSize * kSize)
-mean = patches:mean(2)
-std = (patches:var(2)+10):sqrt()
-for j = 1, data_dim[1] * kSize * kSize do
-   patches[{{}, {j}}]:add(-mean)
-   patches[{{}, {j}}]:cdiv(std)
+print(c.blue "==> whitening")
+patches = patches:reshape(numWindows * (pSize + 1) * (pSize + 1), data_dim[1] * pSize * pSize)
+count = numWindows * (pSize + 1) * (pSize + 1)
+bsize = math.ceil(count / 15)
+for i = 1,count, bsize do
+   xlua.progress(i,count)
+   lasti = math.min(i+bsize-1, count)
+   patches[{{i,lasti}}] = unsup.zca_whiten(patches[{{i,lasti}}])
+   collectgarbage()
 end
--- whiten
-patches = unsup.zca_whiten(patches, nil, nil, nil, 1e-4)
-patches = patches:resize(numPatches, data_dim[1], kSize, kSize)
+patches = patches:reshape(numWindows * (pSize + 1) * (pSize + 1), data_dim[1], pSize, pSize)
 
+collectgarbage()
 print(c.blue "==> find clusters")
 ncentroids = 96
 
@@ -79,12 +91,12 @@ function dispfilters (step,c_kernels,c_counts)
    resized_kernels = c_kernels
 end
 
-kernels, counts = unsup.kmeans(patches, ncentroids, 15, 10000, dispfilters, true)
-
+kernels, counts = unsup.ckmeans(patches, ncentroids, (pSize + 1) * (pSize + 1), 15, 1000, dispfilters, true)
+collectgarbage()
 print("==> select distinct features")
 --resized_kernels = dispfilters(10,kernels,counts)
 
-sfile = 'models/kmeans_'..ncentroids..'.t7'
+sfile = 'models/ckmeans_'..ncentroids..'.t7'
 print('==> saving centroids to disk: ' .. sfile)
 obj = {
     resized_kernels = resized_kernels,

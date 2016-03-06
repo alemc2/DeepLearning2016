@@ -4,31 +4,29 @@ require('unsup')
 --
 --   > x: is supposed to be an MxN matrix, where M is the nb of samples and each sample is N-dim
 --   > k: is the number of kernels
+--   > p: number of patches per window
 --   > niter: the number of iterations
---   > batchsize: the batch size [large is good, to parallelize matrix multiplications]
+--   > batchmult: the number multiplied with p to get the batch size [large is good, to parallelize matrix multiplications]
 --   > callback: optional callback, at each iteration end
 --   > verbose: prints a progress bar...
 --
 --   < returns the k means (centroids) + the counts per centroid
 --
-function unsup.ckmeans(x, k, kh, kw, stride, niter, batchsize, callback, verbose)
+function unsup.ckmeans(x, k, p, niter, batchmult, callback, verbose)
    -- args
-   local help = 'centroids,count = unsup.kmeans(Tensor(npoints,dim), k, kh, kw [, niter, batchsize, callback, verbose])'
+   local help = 'centroids,count = unsup.ckmeans(Tensor(npoints,dim), k, p, [, niter, batchmult, callback, verbose])'
    x = x or error('missing argument: ' .. help)
    k = k or error('missing argument: ' .. help)
-   kh = kh or error('missing argument: ' .. help)
-   kw = kw or error('missing argument: ' .. help)
+   p = p or error('missing argument: ' .. help)
    niter = niter or 1
-   batchsize = batchsize or math.min(1000, (#x)[1])
+   batchmult = batchmult or math.min(1000, (#x)[1])
 
    -- resize data
-   if x:dim() == 3 then
-      x = x:reshape(x:size(1), 1, x:size(2), x:size(3))
-   end
    local k_size = x:size()
    k_size[1] = k
-   k_size[3] = kh
-   k_size[4] = kw
+   if x:dim() > 2 then
+      x = x:reshape(x:size(1), x:nElement()/x:size(1))
+   end
 
    -- some shortcuts
    local sum = torch.sum
@@ -37,8 +35,7 @@ function unsup.ckmeans(x, k, kh, kw, stride, niter, batchsize, callback, verbose
 
    -- dims
    local nsamples = (#x)[1]
-   local nchannels = (#x)[2]
-   local ndims = nchannels*kh*kw
+   local ndims = (#x)[2]
 
    -- initialize means
    local centroids = x.new(k,ndims):normal()
@@ -46,9 +43,9 @@ function unsup.ckmeans(x, k, kh, kw, stride, niter, batchsize, callback, verbose
       centroids[i]:div(centroids[i]:norm())
    end
    local totalcounts = x.new(k):zero()
-
+      
    -- callback?
-   if callback then callback(0,centroids:reshape(k_size),torch.ones(k)) end
+   if callback then callback(0,centroids:reshape(k_size),totalcounts) end
 
    -- do niter iterations
    for i = 1,niter do
@@ -63,53 +60,32 @@ function unsup.ckmeans(x, k, kh, kw, stride, niter, batchsize, callback, verbose
       local counts = x.new(k):zero()
 
       -- process batch
-      for i = 1,nsamples,batchsize do
+      for i = 1,nsamples,(p*batchmult) do
          -- indices
-         local lasti = math.min(i+batchsize-1,nsamples)
-         local m = lasti - i + 1
+         local lasti = i+(p*batchmult)-1
 
          -- k-means step, on minibatch
-         local batch_x = x[{ {i,lasti} }]
-         local batch = x.new(m, ndims)
-         local val = x.new(m,1)
-         local labels = x.new(m,1)
-         for j = 1,m do
-            H = kh+1
-            W = kw+1
-            local patches = x.new(math.floor(H/stride)*math.floor(W/stride), ndims)
-            for h = 1,H,stride do
-               for w = 1,W,stride do
-                  patches[1+(math.floor((h-1)/stride)*(math.floor(W/stride)))+math.floor((w-1)/stride)] = batch_x[{j, {}, {h,h+kh-1}, {w,w+kw-1}}]:reshape(ndims)
-               end
-            end
-
-            -- normalize patches
-            mean = patches:mean(2)
-            std = (patches:var(2)+10):sqrt()
-            for j = 1, ndims do
-               patches[{{}, {j}}]:add(-mean)
-               patches[{{}, {j}}]:cdiv(std)
-            end
-            -- whiten
-            patches = unsup.zca_whiten(patches, nil, nil, nil, 1e-4)
-
-            local patches_t = patches:t()
-            local tmp = centroids * patches_t
-            for n = 1,(#patches)[1] do
-               tmp[{ {},n }]:add(-1,c2)
-            end
-            local val1,index1 = max(tmp,1)
-            local val2,index2 = max(val1,2)
-            val[j] = val2[1][1]
-            labels[j] = index1[1][index2[1][1]]
-            batch[j] = patches[index2[1][1]]
+         local batch = x[{ {i,lasti},{} }]
+         local batch_t = batch:t()
+         local tmp = centroids * batch_t
+         for n = 1,(#batch)[1] do
+            tmp[{ {},n }]:add(-1,c2)
          end
+         local val,labels = max(tmp,1)
 
-         val = val:t()
-         labels = labels:t()
+         -- select one patch per window
+         val = val:reshape(batchmult, p):t()
+         val, index = max(val,1)
+         labels = labels:reshape(batchmult, p):t()
+         labels = labels:gather(1, index)
+
+         index = index:reshape(batchmult,1):expand(batchmult,ndims):reshape(batchmult,1,ndims)
+         batch = batch:reshape(batchmult, p, ndims)
+         batch = batch:gather(2, index)
+         batch = batch:reshape(batchmult, ndims)
 
          -- count examplars per template
-         local S = x.new(m,k):zero()
+         local S = x.new(batchmult,k):zero()
          for i = 1,(#labels)[2] do
             S[i][labels[1][i]] = 1
          end
@@ -129,8 +105,8 @@ function unsup.ckmeans(x, k, kh, kw, stride, niter, batchsize, callback, verbose
 
       -- callback?
       if callback then 
-         local ret = callback(i,centroids:reshape(k_size),counts) 
-         --if ret then break end
+         local ret = callback(i,centroids:reshape(k_size),totalcounts) 
+         if ret then break end
       end
       collectgarbage()
    end
