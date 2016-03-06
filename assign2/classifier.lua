@@ -57,7 +57,7 @@ firstLayer = nn.SpatialConvolution(nfeats, nstates, filtsize, filtsize, 2, 2)
 firstLayer.bias:zero()
 firstLayer.weight = torch.load(opt.firstlayer).resized_kernels
 
---model:add(firstLayer) -- XXX generalize
+model:add(firstLayer)
 -- TODO: do we need batch normalization?
 model:add(nn.ReLU())
 model:add(nn.SpatialMaxPooling(poolsize,poolsize,poolsize,poolsize))
@@ -69,7 +69,6 @@ model:add(nn.Linear(nstates*22*22, noutputs))
 
 criterion = nn.CrossEntropyCriterion()
 
-firstLayer:cuda() -- XXX generalize
 model:cuda()
 criterion:cuda()
 
@@ -163,18 +162,14 @@ function train()
                        -- evaluate function for complete mini batch
                        for i = 1,#inputs do
                           -- estimate f
-                          local first_output = firstLayer:forward(inputs[i]) -- XXX generalize?
-                          local output = model:forward(first_output)
+                          local output = model:forward(inputs[i])
                           local err = criterion:forward(output, targets[i])
                           f = f + err
 
                           -- estimate df/dW
                           local df_do = criterion:backward(output, targets[i])
-                          local bp = model:backward(first_output, df_do)
-                          if epoch > 0 then -- XXX > 0 ?
-                             firstLayer:backward(inputs[i], bp) -- FIXME this doesn't work!
-                             --print(torch.sum(firstLayer.weight))
-                          end
+                          model:backward(inputs[i], df_do)
+                          --print(torch.sum(model:get(1).weight)) -- first convolution layer
 
                           -- update confusion
                           confusion:add(output, targets[i])
@@ -235,8 +230,7 @@ function test()
       local target = provider.valData.labels[t]
 
       -- test sample
-      local pred_first = firstLayer:forward(input) -- XXX generalize
-      local pred = model:forward(pred_first)
+      local pred = model:forward(input)
       confusion:add(pred, target)
    end
 
@@ -292,7 +286,7 @@ while true do
       local filename = 'models/best.net'
       os.execute('mkdir -p ' .. sys.dirname(filename))
       print('==> saving final model to '..filename)
-      torch.save(filename, {model=bestModel, firstlayer=firstLayer:clone()})
+      torch.save(filename, bestModel)
    end
 
    print('Best model accuracy is ' .. bestAcc)
