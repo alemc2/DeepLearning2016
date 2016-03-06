@@ -57,6 +57,10 @@ firstLayer = nn.SpatialConvolution(nfeats, nstates, filtsize, filtsize, 2, 2)
 firstLayer.bias:zero()
 firstLayer.weight = torch.load(opt.firstlayer).resized_kernels
 
+firstLayerAccGradParams = firstLayer.accGradParameters
+firstLayer.accGradParameters = function() end
+
+
 model:add(firstLayer)
 -- TODO: do we need batch normalization?
 model:add(nn.ReLU())
@@ -117,6 +121,11 @@ function train()
 
    -- epoch tracker
    epoch = epoch or 1
+
+   if epoch == 999 then
+      print('turning on training for first layer')
+      firstLayer.accGradParameters = firstLayerAccGradParams
+   end
 
    -- local vars
    local time = sys.clock()
