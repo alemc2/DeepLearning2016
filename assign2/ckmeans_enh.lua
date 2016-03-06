@@ -81,18 +81,18 @@ function unsup.ckmeans(provider, k, nch, kw, kh, nsamples, niter, batchmult, cal
          local val,labels = max(tmp,1)
 
          -- select one patch per window
-         val = val:reshape(batchmult, p):t()
+         val = val:reshape(m, p):t()
          val, index = max(val,1)
-         labels = labels:reshape(batchmult, p):t()
+         labels = labels:reshape(m, p):t()
          labels = labels:gather(1, index)
 
-         index = index:reshape(batchmult,1):expand(batchmult,ndims):reshape(batchmult,1,ndims)
-         batch = batch:reshape(batchmult, p, ndims)
+         index = index:reshape(m,1):expand(m,ndims):reshape(m,1,ndims)
+         batch = batch:reshape(m, p, ndims)
          batch = batch:gather(2, index)
-         batch = batch:reshape(batchmult, ndims)
+         batch = batch:reshape(m, ndims)
 
          -- count examplars per template
-         local S = torch.Tensor(batchmult,k):zero()
+         local S = torch.Tensor(m,k):zero()
          for i = 1,(#labels)[2] do
             S[i][labels[1][i]] = 1
          end

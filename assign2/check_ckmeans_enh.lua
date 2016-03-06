@@ -1,7 +1,7 @@
 require 'xlua'
 require 'optim'
 require 'unsup'
-require 'ckmeans'
+require 'ckmeans_enh'
 dofile './provider_unlabel.lua'
 c = require 'trepl.colorize'
 
@@ -12,9 +12,9 @@ provider_unlabel = Provider_Unlabel()
 collectgarbage()
 
 data_dim = {3,96,96}
-pSize = 7
+pSize = 13
 trsize = provider_unlabel.unlabeledData:size()
-numWindows = 300000
+numWindows = 350000
 
 print(c.blue "==> find clusters")
 ncentroids = 96
@@ -45,17 +45,19 @@ function dispfilters (step,c_kernels,c_counts)
        itorch.image(c_kernels:index(1,varind[{{1,math.min(96,(#varind)[1])}}]))
    end
    resized_kernels = c_kernels
+
+   sfile = 'models/ckmeans_'..ncentroids..'.t7'
+   print('==> saving centroids to disk: ' .. sfile)
+   obj = {
+       resized_kernels = resized_kernels,
+       kernels = c_kernels,
+       counts = c_counts
+   }
+   torch.save(sfile, obj)
 end
 
-kernels, counts = unsup.ckmeans(provider_unlabel, ncentroids, 3, pSize, pSize , numWindows, 15, 1000, dispfilters, true)
+kernels, counts = unsup.ckmeans(provider_unlabel, ncentroids, 3, pSize, pSize , numWindows, 15, 5000, dispfilters, true)
 print("==> select distinct features")
 --resized_kernels = dispfilters(10,kernels,counts)
 
-sfile = 'models/ckmeans_'..ncentroids..'.t7'
-print('==> saving centroids to disk: ' .. sfile)
-obj = {
-    resized_kernels = resized_kernels,
-    kernels = kernels,
-    counts = counts
-}
-torch.save(sfile, obj)
+

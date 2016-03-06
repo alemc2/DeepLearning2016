@@ -58,6 +58,7 @@ firstLayer.bias:zero()
 firstLayer.weight = torch.load(opt.firstlayer).resized_kernels
 
 --model:add(firstLayer) -- XXX generalize
+-- TODO: do we need batch normalization?
 model:add(nn.ReLU())
 model:add(nn.SpatialMaxPooling(poolsize,poolsize,poolsize,poolsize))
 
@@ -66,17 +67,7 @@ model:add(nn.View(nstates*22*22))
 --model:add(nn.Dropout(0.5))
 model:add(nn.Linear(nstates*22*22, noutputs))
 
--- This loss requires the outputs of the trainable model to
--- be properly normalized log-probabilities, which can be
--- achieved using a softmax function
-
-model:add(nn.LogSoftMax())
-
--- The loss works like the MultiMarginCriterion: it takes
--- a vector of classes, and the index of the grountruth class
--- as arguments.
-
-criterion = nn.ClassNLLCriterion()
+criterion = nn.CrossEntropyCriterion()
 
 firstLayer:cuda() -- XXX generalize
 model:cuda()
@@ -179,7 +170,11 @@ function train()
 
                           -- estimate df/dW
                           local df_do = criterion:backward(output, targets[i])
-                          model:backward(inputs[i], df_do)
+                          local bp = model:backward(first_output, df_do)
+                          if epoch > 0 then -- XXX > 0 ?
+                             firstLayer:backward(inputs[i], bp) -- FIXME this doesn't work!
+                             --print(torch.sum(firstLayer.weight))
+                          end
 
                           -- update confusion
                           confusion:add(output, targets[i])
@@ -297,7 +292,7 @@ while true do
       local filename = 'models/best.net'
       os.execute('mkdir -p ' .. sys.dirname(filename))
       print('==> saving final model to '..filename)
-      torch.save(filename, bestModel)
+      torch.save(filename, {model=bestModel, firstlayer=firstLayer:clone()})
    end
 
    print('Best model accuracy is ' .. bestAcc)
