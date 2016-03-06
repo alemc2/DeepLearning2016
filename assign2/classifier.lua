@@ -13,6 +13,7 @@ cmd:text()
 cmd:text('Options:')
 cmd:option('-threads', 8, 'number of threads')
 cmd:option('-optimization', 'ADAM', 'optimization method: SGD | ADAM')
+cmd:option('-firstlayer', 'models/kmeans_96.t7', 'First layer centroids')
 cmd:option('-learningRate', 1e-3, 'learning rate at t=0')
 cmd:option('-beta1', 0.9, 'beta1 (for Adam)')
 cmd:option('-beta2', 0.999, 'beta2 (for Adam)')
@@ -43,36 +44,27 @@ width = 96
 height = 96
 ninputs = nfeats*width*height
 
--- number of hidden units (for MLP only):
-nhiddens = ninputs / 2
-
 -- hidden units, filter sizes (for ConvNet only):
-nstates = {32,64,1024}
-filtsize = 5
+nstates = 96
+filtsize = 7
 poolsize = 2
 
 print '==> construct model'
 
--- a typical modern convolution network (conv+relu+pool)
 model = nn.Sequential()
 
--- stage 1 : filter bank -> squashing -> L2 pooling -> normalization
-model:add(nn.SpatialConvolutionMM(nfeats, nstates[1], filtsize, filtsize))
-model:add(nn.ReLU())
-model:add(nn.SpatialMaxPooling(poolsize,poolsize,poolsize,poolsize))
+firstLayer = nn.SpatialConvolution(nfeats, nstates, filtsize, filtsize, 2, 2)
+firstLayer.bias:zero()
+firstLayer.weight = torch.load(opt.firstlayer).resized_kernels
 
--- stage 2 : filter bank -> squashing -> L2 pooling -> normalization
-model:add(nn.SpatialConvolutionMM(nstates[1], nstates[2], filtsize, filtsize))
+--model:add(firstLayer) -- XXX generalize
 model:add(nn.ReLU())
---model:add(nn.SpatialDropout(0.5))
 model:add(nn.SpatialMaxPooling(poolsize,poolsize,poolsize,poolsize))
 
 -- stage 3 : standard 2-layer neural network
-model:add(nn.View(28224)) -- XXX remove hardcoded crap
-model:add(nn.Linear(28224, nstates[3]))
-model:add(nn.ReLU())
-model:add(nn.Dropout(0.5))
-model:add(nn.Linear(nstates[3], noutputs))
+model:add(nn.View(nstates*22*22))
+--model:add(nn.Dropout(0.5))
+model:add(nn.Linear(nstates*22*22, noutputs))
 
 -- This loss requires the outputs of the trainable model to
 -- be properly normalized log-probabilities, which can be
@@ -86,6 +78,7 @@ model:add(nn.LogSoftMax())
 
 criterion = nn.ClassNLLCriterion()
 
+firstLayer:cuda() -- XXX generalize
 model:cuda()
 criterion:cuda()
 
@@ -179,7 +172,8 @@ function train()
                        -- evaluate function for complete mini batch
                        for i = 1,#inputs do
                           -- estimate f
-                          local output = model:forward(inputs[i])
+                          local first_output = firstLayer:forward(inputs[i]) -- XXX generalize?
+                          local output = model:forward(first_output)
                           local err = criterion:forward(output, targets[i])
                           f = f + err
 
@@ -246,7 +240,8 @@ function test()
       local target = provider.valData.labels[t]
 
       -- test sample
-      local pred = model:forward(input)
+      local pred_first = firstLayer:forward(input) -- XXX generalize
+      local pred = model:forward(pred_first)
       confusion:add(pred, target)
    end
 
