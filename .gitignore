@@ -8,3 +8,7 @@ results/
 *.log
 *.out
 *.run.xml
+*.ipynb
+*.net
+*.t7
+stl-10/
