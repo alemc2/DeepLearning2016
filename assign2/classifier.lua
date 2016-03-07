@@ -13,15 +13,18 @@ cmd:text()
 cmd:text('Options:')
 cmd:option('-threads', 8, 'number of threads')
 cmd:option('-optimization', 'ADAM', 'optimization method: SGD | ADAM')
+cmd:option('-model', 'simple', 'Model name')
 cmd:option('-firstlayer', 'models/kmeans_96.t7', 'First layer centroids')
+cmd:option('-trainfirst', 999, 'The epoch at which to start training first layer')
 cmd:option('-learningRate', 1e-3, 'learning rate at t=0')
 cmd:option('-beta1', 0.9, 'beta1 (for Adam)')
 cmd:option('-beta2', 0.999, 'beta2 (for Adam)')
 cmd:option('-epsilon', 1e-8, 'epsilon (for Adam)')
-cmd:option('-batchSize', 16, 'mini-batch size (1 = pure stochastic)')
+cmd:option('-batchSize', 64, 'mini-batch size (1 = pure stochastic)')
 cmd:option('-weightDecay', 0, 'weight decay (SGD only)')
 cmd:option('-momentum', 0, 'momentum (SGD only)')
-cmd:option('-patience', 20, 'minimum number of epochs to train for')
+cmd:option('-patience', 100, 'minimum number of epochs to train for')
+cmd:option('-epoch_step', 25, 'epoch step')
 cmd:option('-improvementThreshold', 0.999, 'amount to multiply test accuracy to determine significant improvement')
 cmd:option('-patienceIncrease', 2, 'amount to multiply patience by on significant improvement')
 cmd:text()
@@ -30,51 +33,46 @@ opt = cmd:parse(arg or {})
 torch.setdefaulttensortype('torch.FloatTensor')
 torch.setnumthreads(opt.threads)
 
+do -- data augmentation module
+   local DataAugment,parent = torch.class('nn.DataAugment', 'nn.Module')
+
+   function DataAugment:__init()
+      parent.__init(self)
+      self.train = true
+   end
+
+   function DataAugment:updateOutput(input)
+      if self.train then
+         local bs = input:size(1)
+         local flip_mask = torch.randperm(bs):le(bs/2)
+         for i=1,input:size(1) do
+            if flip_mask[i] == 1 then image.hflip(input[i], input[i]) end
+         end
+      end
+      self.output:set(input)
+      return self.output
+   end
+end
+
+
 print '==> loading provider'
 provider = Provider()
 
-print '==> define parameters'
-
--- 10-class problem
-noutputs = 10
-
--- input dimensions
-nfeats = 3
-width = 96
-height = 96
-ninputs = nfeats*width*height
-
--- hidden units, filter sizes (for ConvNet only):
-nstates = 96
-filtsize = 13
-poolsize = 2
-
 print '==> construct model'
 
-model = nn.Sequential()
-
-firstLayer = nn.SpatialConvolution(nfeats, nstates, filtsize, filtsize, 2, 2)
+firstLayer = nn.SpatialConvolution(3, 96, 13, 13, 4, 4)
 firstLayer.bias:zero()
 firstLayer.weight = torch.load(opt.firstlayer).resized_kernels
 
 firstLayerAccGradParams = firstLayer.accGradParameters
 firstLayer.accGradParameters = function() end
 
+model = nn.Sequential()
+model:add(nn.DataAugment():float())
+model:add(nn.Copy('torch.FloatTensor','torch.CudaTensor'):cuda())
+model:add(dofile('models/'..opt.model..'.lua'):cuda())
 
-model:add(firstLayer)
--- TODO: do we need batch normalization?
-model:add(nn.ReLU())
-model:add(nn.SpatialMaxPooling(poolsize,poolsize,poolsize,poolsize))
-
--- stage 3 : standard 2-layer neural network
-model:add(nn.View(nstates*21*21))
---model:add(nn.Dropout(0.5))
-model:add(nn.Linear(nstates*21*21, noutputs))
-
-criterion = nn.CrossEntropyCriterion()
-
-model:cuda()
-criterion:cuda()
+criterion = nn.CrossEntropyCriterion():cuda()
 
 
 print '==> here is the model:'
@@ -118,81 +116,47 @@ end
 print '==> defining training procedure'
 
 function train()
-
-   -- epoch tracker
+   model:training()
    epoch = epoch or 1
-
-   if epoch == 999 then
-      print('turning on training for first layer')
-      firstLayer.accGradParameters = firstLayerAccGradParams
-   end
 
    -- local vars
    local time = sys.clock()
 
-   -- set model to training mode (for modules that differ in training and testing, like Dropout)
-   model:training()
+    if epoch == opt.trainfirst then
+       print('turning on training for first layer')
+       firstLayer.accGradParameters = firstLayerAccGradParams
+    end
 
-   -- shuffle at each epoch
-   shuffle = torch.randperm(provider.trainData.size())
+   -- drop learning rate every "epoch_step" epochs
+   if epoch % opt.epoch_step == 0 then optimState.learningRate = optimState.learningRate/2 end
 
-   -- do one epoch
-   print('==> doing epoch on training data:')
-   print("==> online epoch # " .. epoch .. ' [batchSize = ' .. opt.batchSize .. ']')
-   for t = 1,provider.trainData.size(),opt.batchSize do
-      -- disp progress
-      xlua.progress(t, provider.trainData.size())
+   print('==>'.." online epoch # " .. epoch .. ' [batchSize = ' .. opt.batchSize .. ']')
 
-      -- create mini batch
-      local inputs = {}
-      local targets = {}
-      for i = t,math.min(t+opt.batchSize-1,provider.trainData.size()) do
-         -- load new sample
-         local input = provider.trainData.data[shuffle[i]] -- will need to clone this when applying transformations
-         local target = provider.trainData.labels[shuffle[i]]
-         input = input:cuda()
-         table.insert(inputs, input)
-         table.insert(targets, target)
-      end
+   local targets = torch.CudaTensor(opt.batchSize)
+   local indices = torch.randperm(provider.trainData.data:size(1)):long():split(opt.batchSize)
+   -- remove last element so that all the batches have equal size
+   indices[#indices] = nil
 
-      -- create closure to evaluate f(X) and df/dX
+   local tic = torch.tic()
+   for t,v in ipairs(indices) do
+      xlua.progress(t, #indices)
+
+      local inputs = provider.trainData.data:index(1,v)
+      targets:copy(provider.trainData.labels:index(1,v))
+
       local feval = function(x)
-                       -- get new parameters
-                       if x ~= parameters then
-                          parameters:copy(x)
-                       end
+         if x ~= parameters then parameters:copy(x) end
+         gradParameters:zero()
 
-                       -- reset gradients
-                       gradParameters:zero()
+         local outputs = model:forward(inputs)
+         local f = criterion:forward(outputs, targets)
+         local df_do = criterion:backward(outputs, targets)
+         model:backward(inputs, df_do)
 
-                       -- f is the average of all criterions
-                       local f = 0
+         confusion:batchAdd(outputs, targets)
 
-                       -- evaluate function for complete mini batch
-                       for i = 1,#inputs do
-                          -- estimate f
-                          local output = model:forward(inputs[i])
-                          local err = criterion:forward(output, targets[i])
-                          f = f + err
-
-                          -- estimate df/dW
-                          local df_do = criterion:backward(output, targets[i])
-                          model:backward(inputs[i], df_do)
-                          --print(torch.sum(model:get(1).weight)) -- first convolution layer
-
-                          -- update confusion
-                          confusion:add(output, targets[i])
-                       end
-
-                       -- normalize gradients and f(X)
-                       gradParameters:div(#inputs)
-                       f = f/#inputs
-
-                       -- return f and df/dX
-                       return f,gradParameters
-                    end
-
-      -- optimize on current mini-batch
+         return f,gradParameters
+      end
       optimMethod(feval, parameters, optimState)
       collectgarbage()
    end
@@ -202,8 +166,15 @@ function train()
    time = time / provider.trainData.size()
    print("\n==> time to learn 1 sample = " .. (time*1000) .. 'ms')
 
+   confusion:updateValids()
+
    -- print confusion matrix
    print(confusion)
+
+   print(('Train accuracy: '..'%.2f'..' %%\t time: %.2f s'):format(
+         confusion.totalValid * 100, torch.toc(tic)))
+
+   train_acc = confusion.totalValid * 100
 
    -- save/log current net
    local filename = 'models/recent.net'
@@ -211,7 +182,6 @@ function train()
    print('==> saving model to '..filename)
    torch.save(filename, model)
 
-   -- next epoch
    confusion:zero()
    epoch = epoch + 1
 end
@@ -229,18 +199,15 @@ function test()
 
    -- test over test data
    print('==> testing on test set:')
-   for t = 1,provider.valData.size() do
+
+   local bs = 25
+   for i=1,provider.valData.data:size(1),bs do
       -- disp progress
-      xlua.progress(t, provider.valData.size())
+      xlua.progress(i, provider.valData.size())
 
-      -- get new sample
-      local input = provider.valData.data[t]
-      input = input:cuda()
-      local target = provider.valData.labels[t]
-
-      -- test sample
-      local pred = model:forward(input)
-      confusion:add(pred, target)
+      inputs = provider.valData.data:narrow(1,i,bs)
+      local outputs = model:forward(inputs)
+      confusion:batchAdd(outputs, provider.valData.labels:narrow(1,i,bs))
    end
 
    -- timing
