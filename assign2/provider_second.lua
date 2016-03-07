@@ -15,12 +15,12 @@ function Provider_Second:__init(full)
 
   self.secondData = {
      data = torch.load('stl-10/secondlevel.t7'),
-     size = function() return groups end
+     size = function() return trsize end
   }
   collectgarbage()
 end
 
-function Provider_Second:getData(group,start,bsize,kw,kh,nch)
+function Provider_Second:getData(start,bsize,kw,kh,nch)
     local second_data = self.secondData
     local numpatches = (kh+1)*(kw+1)
     local ndims = nch*kh*kw
@@ -34,7 +34,7 @@ function Provider_Second:getData(group,start,bsize,kw,kh,nch)
     for i = start, start+bsize-1 do
        local wr = torch.random(height - 2*kh + 1)
        local wc = torch.random(width - 2*kw + 1)
-       local window = second_data.data[group][{math.fmod(i-1,trsize)+1,{},{wr,wr+2*kh-1},{wc,wc+2*kw-1}}]
+       local window = second_data.data[self.group][{math.fmod(i-1,trsize)+1,{},{wr,wr+2*kh-1},{wc,wc+2*kw-1}}]
        for r = 1,kh+1 do
            for c = 1,kw+1 do
                batches[(i-start)*numpatches + (r-1)*(kw+1) + c] = window[{ {}, {r, r+kh-1 }, {c, c+kw-1} }]:reshape(ndims)
