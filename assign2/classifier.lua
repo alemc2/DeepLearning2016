@@ -185,10 +185,12 @@ function train()
       saveModel = model:clone()
       saveModel:remove(1)
       torch.save(filename, {model=saveModel, testData=provider.testData})
+      saveModel = nil
    end
 
    confusion:zero()
    epoch = epoch + 1
+   collectgarbage()
 end
 
 
@@ -236,7 +238,7 @@ end
 print '==> training!'
 
 bestAcc = 0.0
-bestModel = model
+bestModel = nil
 patience = opt.patience
 improvementThreshold = opt.improvementThreshold
 patienceIncrease = opt.patienceIncrease
@@ -269,6 +271,7 @@ while true do
       print('==> saving final model to '..filename)
       bestModel:remove(1)
       torch.save(filename, {model=bestModel, testData=provider.testData})
+      bestModel = nil
    end
 
    print('Best model accuracy is ' .. bestAcc)
@@ -279,4 +282,5 @@ while true do
    else
       print('==> patience: ' .. patience)
    end
+   collectgarbage()
 end

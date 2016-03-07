@@ -127,6 +127,11 @@ function Provider:normalize()
   trainData.mean_v = mean_v
   trainData.std_v = std_v
 
+  self.mean_u = mean_u
+  self.std_u = std_u
+  self.mean_v = mean_v
+  self.std_v = std_v
+
   -- preprocess valSet
   for i = 1,valData:size() do
     xlua.progress(i, valData:size())
