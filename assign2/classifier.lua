@@ -56,7 +56,7 @@ end
 
 
 print '==> loading provider'
-provider = Provider()
+provider = torch.load('provider.t7')
 
 print '==> construct model'
 
