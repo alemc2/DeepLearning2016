@@ -129,4 +129,56 @@ function Provider:normalize()
   -- normalize v globally:
   valData.data:select(2,3):add(-mean_v)
   valData.data:select(2,3):div(std_v)
+
+  for i = 1,trainData:size() do
+     xlua.progress(i, trainData:size())
+     local yuv = trainData.data[i]
+     local rgb = image.yuv2rgb(yuv)
+     trainData.data[i] = rgb
+  end
+
+  for i = 1,valData:size() do
+     xlua.progress(i, valData:size())
+     local yuv = valData.data[i]
+     local rgb = image.yuv2rgb(yuv)
+     valData.data[i] = rgb
+  end
+
+end
+
+function Provider:normalizeTest(testData)
+  ----------------------------------------------------------------------
+  -- preprocess/normalize test sets
+  --
+  local trainData = self.trainData
+  local normalization = nn.SpatialContrastiveNormalization(1, image.gaussian1D(7))
+
+  mean_u = trainData.mean_u
+  std_u = trainData.std_u
+  mean_v = trainData.mean_v
+  std_v = trainData.std_v
+
+  -- preprocess valSet
+  for i = 1,testData:size(1) do
+    xlua.progress(i, testData:size(1))
+     -- rgb -> yuv
+     local rgb = testData[i]
+     local yuv = image.rgb2yuv(rgb)
+     -- normalize y locally:
+     yuv[{1}] = normalization(yuv[{{1}}])
+     testData[i] = yuv
+  end
+  -- normalize u globally:
+  testData:select(2,2):add(-mean_u)
+  testData:select(2,2):div(std_u)
+  -- normalize v globally:
+  testData:select(2,3):add(-mean_v)
+  testData:select(2,3):div(std_v)
+
+  for i = 1,testData:size(1) do
+     xlua.progress(i, testData:size(1))
+     local yuv = testData[i]
+     local rgb = image.yuv2rgb(yuv)
+     testData[i] = rgb
+  end
 end
