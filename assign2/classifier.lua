@@ -70,6 +70,7 @@ firstLayer.accGradParameters = function() end
 model = nn.Sequential()
 model:add(nn.DataAugment():float())
 model:add(nn.Copy('torch.FloatTensor','torch.CudaTensor'):cuda())
+model:add(firstLayer)
 model:add(dofile('models/'..opt.model..'.lua'):cuda())
 
 criterion = nn.CrossEntropyCriterion():cuda()

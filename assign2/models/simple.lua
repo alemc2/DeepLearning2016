@@ -2,7 +2,6 @@ require 'nn'
 
 local model = nn.Sequential()
 
-model:add(firstLayer)
 model:add(nn.SpatialBatchNormalization(96))
 model:add(nn.ReLU())
 model:add(nn.SpatialMaxPooling(2, 2, 2, 2))
