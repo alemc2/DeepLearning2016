@@ -14,11 +14,16 @@ if not secondLayer then
    end
 end
 
+-- usually, we will get connLayer from classifier.lua
+if not connLayer then
+   connLayer = nn.SpatialConvolution(nstates[1],nstates[1],1,1)
+end
+
 model:add(nn.SpatialBatchNormalization(nstates[1]))
 model:add(nn.ReLU())
 model:add(nn.SpatialMaxPooling(poolsize, poolsize, poolsize, poolsize))
 
-model:add(nn.SpatialConvolution(nstates[1],nstates[1],1,1))
+model:add(connLayer)
 model:add(nn.Reshape(nstates[1]/group_size,group_size,10,10))
 
 model:add(nn.Dropout(0.5))
@@ -37,5 +42,6 @@ end
 model:add(multiconv)
 
 model:add(nn.View(nstates[2]*(nstates[1]/group_size)*6*6))
+model:add(nn.Dropout(0.5))
 model:add(nn.Linear(nstates[2]*(nstates[1]/group_size)*6*6, 10))
 return model

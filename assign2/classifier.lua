@@ -19,6 +19,7 @@ cmd:option('-trainfirst', 999, 'The epoch at which to start training first layer
 cmd:option('-secondprefix', 'models/second', 'Second layer centroids file prefix')
 cmd:option('-trainsecond', 999, 'The epoch at which to start training second layer. use 1 to always train.')
 cmd:option('-bestclassifier', 'models/best_classifier.net', 'The best classifier before clustering second layer.')
+cmd:option('-trainconn', 1, 'The epoch at which to start training connection layer. use 1 to always train.')
 cmd:option('-learningRate', 1e-3, 'learning rate at t=0')
 cmd:option('-beta1', 0.9, 'beta1 (for Adam)')
 cmd:option('-beta2', 0.999, 'beta2 (for Adam)')
@@ -62,6 +63,14 @@ print '==> loading provider'
 provider = torch.load('provider.t7')
 
 print '==> construct model'
+
+if opt.trainconn > 1 then
+   connModel = torch.load(opt.bestclassifier)
+   connLayer = connModel.model:get(3):get(4)
+
+   connLayerAccGradParams = connLayer.accGradParameters
+   connLayer.accGradParameters = function() end
+end
 
 firstLayer = nn.SpatialConvolution(3, 96, 13, 13, 4, 4)
 firstLayer.bias:zero()
@@ -143,6 +152,11 @@ function train()
    if epoch == opt.trainfirst then
       print('turning on training for first layer')
       firstLayer.accGradParameters = firstLayerAccGradParams
+   end
+
+   if opt.trainconn > 1 and epoch == opt.trainconn then
+      print('turning on training for connection layer')
+      connLayer.accGradParameters = connLayerAccGradParams
    end
 
    if epoch == opt.trainsecond then
