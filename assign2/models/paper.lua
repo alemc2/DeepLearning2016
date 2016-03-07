@@ -13,6 +13,8 @@ model:add(nn.SpatialMaxPooling(poolsize, poolsize, poolsize, poolsize))
 model:add(nn.SpatialConvolution(nstates[1],nstates[1],1,1))
 model:add(nn.Reshape(nstates[1]/group_size,group_size,10,10))
 
+model:add(nn.Dropout(0.5))
+
 multiconv = nn.Parallel(2,2)
 for i = 1,(nstates[1]/group_size) do
     local seq_container = nn.Sequential()
@@ -24,6 +26,5 @@ end
 model:add(multiconv)
 
 model:add(nn.View(nstates[2]*(nstates[1]/group_size)*6*6))
---model:add(nn.Dropout(0.5))
 model:add(nn.Linear(nstates[2]*(nstates[1]/group_size)*6*6, 10))
 return model
