@@ -16,6 +16,9 @@ cmd:option('-optimization', 'ADAM', 'optimization method: SGD | ADAM')
 cmd:option('-model', 'simple', 'Model name')
 cmd:option('-firstlayer', 'models/kmeans_96.t7', 'First layer centroids')
 cmd:option('-trainfirst', 999, 'The epoch at which to start training first layer')
+cmd:option('-secondprefix', 'models/second', 'Second layer centroids file prefix')
+cmd:option('-trainsecond', 999, 'The epoch at which to start training second layer. use 1 to always train.')
+cmd:option('-bestclassifier', 'models/best_classifier.net', 'The best classifier before clustering second layer.')
 cmd:option('-learningRate', 1e-3, 'learning rate at t=0')
 cmd:option('-beta1', 0.9, 'beta1 (for Adam)')
 cmd:option('-beta2', 0.999, 'beta2 (for Adam)')
@@ -66,6 +69,20 @@ firstLayer.weight = torch.load(opt.firstlayer).resized_kernels
 
 firstLayerAccGradParams = firstLayer.accGradParameters
 firstLayer.accGradParameters = function() end
+
+secondLayer = {}
+
+for i=1, 24 do
+   layer = nn.SpatialConvolution(4, 64, 5, 5)
+   if opt.trainsecond > 1 then
+      layer.bias:zero()
+      layer.weight = torch.load(opt.secondprefix .. '_' .. i .. '.t7').resized_kernels
+   end
+
+   secondLayerAccGradParams = layer.accGradParameters
+   layer.accGradParameters = function() end
+   table.insert(secondLayer, layer)
+end
 
 model = nn.Sequential()
 model:add(nn.DataAugment():float())
@@ -123,10 +140,17 @@ function train()
    -- local vars
    local time = sys.clock()
 
-    if epoch == opt.trainfirst then
-       print('turning on training for first layer')
-       firstLayer.accGradParameters = firstLayerAccGradParams
-    end
+   if epoch == opt.trainfirst then
+      print('turning on training for first layer')
+      firstLayer.accGradParameters = firstLayerAccGradParams
+   end
+
+   if epoch == opt.trainsecond then
+      print('turning on training for second layer')
+      for i = 1, 24 do
+         secondLayer[i].accGradParameters = secondLayerAccGradParams
+      end
+   end
 
    -- drop learning rate every "epoch_step" epochs
    if epoch % opt.epoch_step == 0 then optimState.learningRate = optimState.learningRate/2 end
