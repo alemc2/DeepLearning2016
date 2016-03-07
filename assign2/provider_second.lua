@@ -6,17 +6,20 @@ torch.setdefaulttensortype('torch.FloatTensor')
 
 local Provider_Second = torch.class 'Provider_Second'
 
-function Provider_Second:__init(full)
-  local groups = 24
+function Provider_Second:__init(group)
+  local group = group or error('missing group argument')
   local trsize = 100000
   local channel = 4
   local height = 10
   local width = 10
 
+  local allData = torch.load('stl-10/secondlevel.t7')
+
   self.secondData = {
-     data = torch.load('stl-10/secondlevel.t7'),
+     data = allData[group]:clone(),
      size = function() return trsize end
   }
+  allData = nil
   collectgarbage()
 end
 
@@ -34,7 +37,7 @@ function Provider_Second:getData(start,bsize,kw,kh,nch)
     for i = start, start+bsize-1 do
        local wr = torch.random(height - 2*kh + 1)
        local wc = torch.random(width - 2*kw + 1)
-       local window = second_data.data[self.group][{math.fmod(i-1,trsize)+1,{},{wr,wr+2*kh-1},{wc,wc+2*kw-1}}]
+       local window = second_data.data[{math.fmod(i-1,trsize)+1,{},{wr,wr+2*kh-1},{wc,wc+2*kw-1}}]
        for r = 1,kh+1 do
            for c = 1,kw+1 do
                batches[(i-start)*numpatches + (r-1)*(kw+1) + c] = window[{ {}, {r, r+kh-1 }, {c, c+kw-1} }]:reshape(ndims)
