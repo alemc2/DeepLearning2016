@@ -59,7 +59,7 @@ function dispfilters (step,c_kernels,c_counts)
 end
 
 kernels, counts = unsup.ckmeans(provider_second, ncentroids, data_dim[1], pSize, pSize , numWindows, 15, opt.batchSize, dispfilters, true)
-resized_kernels = dispfilters(10,kernels,counts)
+dispfilters(10,kernels,counts)
 
 print('==> saving centroids to disk: ' .. saveFile)
 obj = {
