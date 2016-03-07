@@ -9,7 +9,7 @@ provider_unlabel = Provider_Unlabel()
 collectgarbage()
 
 data_dim = {3,96,96}
-kSize = 7
+kSize = 13
 trsize = provider_unlabel.unlabeledData:size()
 numPatches = 300000
 
@@ -42,7 +42,7 @@ function dispfilters (step,c_kernels,c_counts)
    return c_kernels
 end
 
-kernels, counts = unsup.convkmeans(provider_unlabel, ncentroids, 3, kSize, kSize, numPatches, 15, 100, dispfilters, true)
+kernels, counts = unsup.convkmeans(provider_unlabel, ncentroids, 3, kSize, kSize, numPatches, 15, 2000, dispfilters, true)
 --kernels, counts = unsup.convkmeans(patches, ncentroids, 11, 11, 15, 10000, dispfilters, true)
 
 print("==> select distinct features")
