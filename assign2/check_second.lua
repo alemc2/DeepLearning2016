@@ -18,7 +18,7 @@ opt = cmd:parse(arg or {})
 saveFile = opt.saveFilePrefix .. '_' .. opt.group .. '.t7'
 print('will save kernels to '..saveFile)
 
-torch.setnumthreads(8)
+torch.setnumthreads(1)
 
 print(c.blue '==> Group '.. opt.group)
 provider_second = Provider_Second(opt.group)
