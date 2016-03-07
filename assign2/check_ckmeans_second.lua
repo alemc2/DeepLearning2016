@@ -31,7 +31,7 @@ numWindows = opt.numWindows
 ngroups = 24
 
 print(c.blue "==> find clusters")
-ncentroids = 96
+ncentroids = 64
 
 --Define a callback to display filters at each iteration
 function dispfilters (step,c_kernels,c_counts)
