@@ -10,7 +10,7 @@ cmd:text()
 cmd:text('Options:')
 cmd:option('-group', 999, 'Group number')
 cmd:option('-numWindows', 100000, 'Number of windows')
-cmd:option('-batchSize', 2000, 'Batch size')
+cmd:option('-batchSize', 20000, 'Batch size')
 cmd:option('-saveFilePrefix', 'models/second', 'Save filename prefix')
 cmd:text()
 opt = cmd:parse(arg or {})
@@ -18,7 +18,7 @@ opt = cmd:parse(arg or {})
 saveFile = opt.saveFilePrefix .. '_' .. opt.group .. '.t7'
 print('will save kernels to '..saveFile)
 
-torch.setnumthreads(8)
+torch.setnumthreads(1)
 
 print ('==> Group '.. opt.group)
 provider_second = Provider_Second(opt.group)
