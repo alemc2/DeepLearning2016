@@ -178,10 +178,14 @@ function train()
    train_acc = confusion.totalValid * 100
 
    -- save/log current net
-   local filename = 'models/recent.net'
-   os.execute('mkdir -p ' .. sys.dirname(filename))
-   print('==> saving model to '..filename)
-   torch.save(filename, model)
+   if epoch % 10 == 0 then
+      local filename = 'models/recent.net'
+      os.execute('mkdir -p ' .. sys.dirname(filename))
+      print('==> saving model to '..filename)
+      saveModel = model:clone()
+      saveModel:remove(1)
+      torch.save(filename, {model=saveModel, testData=provider.testData})
+   end
 
    confusion:zero()
    epoch = epoch + 1
@@ -263,7 +267,8 @@ while true do
       local filename = 'models/best.net'
       os.execute('mkdir -p ' .. sys.dirname(filename))
       print('==> saving final model to '..filename)
-      torch.save(filename, bestModel)
+      bestModel:remove(1)
+      torch.save(filename, {model=bestModel, testData=provider.testData})
    end
 
    print('Best model accuracy is ' .. bestAcc)

@@ -27,6 +27,7 @@ local Provider = torch.class 'Provider'
 function Provider:__init(full)
   local trsize = 4000
   local valsize = 1000  -- Use the validation here as the valing set
+  local testsize = 8000  -- Use the validation here as the valing set
   local channel = 3
   local height = 96
   local width = 96
@@ -49,6 +50,7 @@ function Provider:__init(full)
 
   local raw_train = torch.load('stl-10/train.t7b')
   local raw_val = torch.load('stl-10/val.t7b')
+  local raw_test = torch.load('stl-10/test.t7b')
 
   -- load and parse dataset
   self.trainData = {
@@ -68,11 +70,22 @@ function Provider:__init(full)
                                                  valsize, channel, height, width)
   local valData = self.valData
 
+  self.testData = {
+     data = torch.Tensor(),
+     labels = torch.Tensor(),
+     size = function() return testsize end
+  }
+  self.testData.data, self.testData.labels = parseDataLabel(raw_test.data,
+                                                 testsize, channel, height, width)
+  local testData = self.testData
+
   -- convert from ByteTensor to Float
   self.trainData.data = self.trainData.data:float()
   self.trainData.labels = self.trainData.labels:float()
   self.valData.data = self.valData.data:float()
   self.valData.labels = self.valData.labels:float()
+  self.testData.data = self.testData.data:float()
+  self.testData.labels = self.testData.labels:float()
   collectgarbage()
 end
 
@@ -82,6 +95,7 @@ function Provider:normalize()
   --
   local trainData = self.trainData
   local valData = self.valData
+  local testData = self.testData
 
   print '<trainer> preprocessing data (color space + normalization)'
   collectgarbage()
@@ -130,6 +144,23 @@ function Provider:normalize()
   valData.data:select(2,3):add(-mean_v)
   valData.data:select(2,3):div(std_v)
 
+  -- preprocess testSet
+  for i = 1,testData:size() do
+    xlua.progress(i, testData:size())
+     -- rgb -> yuv
+     local rgb = testData.data[i]
+     local yuv = image.rgb2yuv(rgb)
+     -- normalize y locally:
+     yuv[{1}] = normalization(yuv[{{1}}])
+     testData.data[i] = yuv
+  end
+  -- normalize u globally:
+  testData.data:select(2,2):add(-mean_u)
+  testData.data:select(2,2):div(std_u)
+  -- normalize v globally:
+  testData.data:select(2,3):add(-mean_v)
+  testData.data:select(2,3):div(std_v)
+
   for i = 1,trainData:size() do
      xlua.progress(i, trainData:size())
      local yuv = trainData.data[i]
@@ -144,41 +175,11 @@ function Provider:normalize()
      valData.data[i] = rgb
   end
 
-end
-
-function Provider:normalizeTest(testData)
-  ----------------------------------------------------------------------
-  -- preprocess/normalize test sets
-  --
-  local trainData = self.trainData
-  local normalization = nn.SpatialContrastiveNormalization(1, image.gaussian1D(7))
-
-  mean_u = trainData.mean_u
-  std_u = trainData.std_u
-  mean_v = trainData.mean_v
-  std_v = trainData.std_v
-
-  -- preprocess valSet
-  for i = 1,testData:size(1) do
-    xlua.progress(i, testData:size(1))
-     -- rgb -> yuv
-     local rgb = testData[i]
-     local yuv = image.rgb2yuv(rgb)
-     -- normalize y locally:
-     yuv[{1}] = normalization(yuv[{{1}}])
-     testData[i] = yuv
-  end
-  -- normalize u globally:
-  testData:select(2,2):add(-mean_u)
-  testData:select(2,2):div(std_u)
-  -- normalize v globally:
-  testData:select(2,3):add(-mean_v)
-  testData:select(2,3):div(std_v)
-
-  for i = 1,testData:size(1) do
-     xlua.progress(i, testData:size(1))
-     local yuv = testData[i]
+  for i = 1,testData:size() do
+     xlua.progress(i, testData:size())
+     local yuv = testData.data[i]
      local rgb = image.yuv2rgb(yuv)
-     testData[i] = rgb
+     testData.data[i] = rgb
   end
+
 end
