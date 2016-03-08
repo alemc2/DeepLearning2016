@@ -40,21 +40,24 @@ for i = 1,(nstates[1]/group_size) do
 end
 model:add(multiconv)
 
-model:add(nn.Dropout(0.5))
-
 model:add(nn.Reshape((nstates[1]/group_size)*nstates[2],6,6))
+model:add(nn.Dropout(0.4))
+
 model:add(nn.SpatialConvolution((nstates[1]/group_size)*nstates[2],nstates[3],filtsize[3],filtsize[3]))
 model:add(nn.SpatialBatchNormalization(nstates[3]))
 model:add(nn.ReLU())
+model:add(nn.Dropout(0.4))
 
 model:add(nn.Reshape(nstates[3]*(6-filtsize[3]+1)*(6-filtsize[3]+1)))
 model:add(nn.Linear(nstates[3]*(6-filtsize[3]+1)*(6-filtsize[3]+1), nstates[4]))
+model:add(nn.BatchNormalization(nstates[4]))
 model:add(nn.ReLU())
-
 model:add(nn.Dropout(0.5))
 
 model:add(nn.Linear(nstates[4], nstates[5]))
+model:add(nn.BatchNormalization(nstates[5]))
 model:add(nn.ReLU())
+model:add(nn.Dropout(0.5))
 
 model:add(nn.Linear(nstates[5], nstates[6]))
 
