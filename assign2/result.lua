@@ -4,10 +4,31 @@ require 'cunn'
 require 'optim'
 require 'csvigo'
 
+cmd = torch.CmdLine()
+cmd:text()
+cmd:text('Options:')
+cmd:option('-model', 'models/best.net', 'input model')
+cmd:text()
+opt = cmd:parse(arg or {})
+
 torch.setdefaulttensortype('torch.FloatTensor')
 
+do -- data augmentation module blank module
+   local DataAugment,parent = torch.class('nn.DataAugment', 'nn.Module')
+
+   function DataAugment:__init()
+      parent.__init(self)
+      self.train = true
+   end
+
+   function DataAugment:updateOutput(input)
+      self.output:set(input)
+      return self.output
+   end
+end
+
 print ('==> loading best model')
-modelObj = torch.load('models/best.net') -- TODO change for final submission
+modelObj = torch.load(opt.model) -- TODO change for final submission
 
 model = modelObj.model
 testData = modelObj.testData
