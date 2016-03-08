@@ -1,0 +1,237 @@
+%me=0 student solutions (ps file), me=1 - my solutions (sol file), me=2 - assignment (hw file)
+\def\me{0}
+\def\num{1}  %homework number
+\def\due{Thursday, March 10}  %due date
+\def\course{DS-GA.1008 Deep Learning} %course name, changed only once
+\def\name{R2DEEP2 (Ankit Vani, Srivas Venkatesh)}   %student changes (instructor keeps!)
+%
+\iffalse
+INSTRUCTIONS: replace # by the homework number.
+(if this is not ps#.tex, use the right file name)
+
+  Clip out the ********* INSERT HERE ********* bits below and insert
+appropriate TeX code.  Once you are done with your file, run
+
+  ``latex ps#.tex''
+
+from a UNIX prompt.  If your LaTeX code is clean, the latex will exit
+back to a prompt.  To see intermediate results, type
+
+  ``xdvi ps#.dvi'' (from UNIX prompt)
+  ``yap ps#.dvi'' (if using MikTex in Windows)
+
+after compilation. Once you are done, run
+
+  ``dvips ps#.dvi''
+
+which should print your file to the nearest printer.  There will be
+residual files called ps#.log, ps#.aux, and ps#.dvi.  All these can be
+deleted, but do not delete ps1.tex. To generate postscript file ps#.ps,
+run
+
+  ``dvips -o ps#.ps ps#.dvi''
+
+I assume you know how to print .ps files (``lpr -Pprinter ps#.ps'')
+\fi
+%
+\title{Deep Learning}
+\documentclass[11pt]{article}
+\usepackage{amsfonts,amsmath,physics}
+\usepackage[backend=bibtex,sorting=none]{biblatex}
+\usepackage{latexsym, graphicx}
+\usepackage{amssymb, gensymb}
+\usepackage{mathtools}
+\usepackage{clrscode3e}
+\usepackage{longtable}
+\usepackage{tikz}
+\usepackage{bm}
+\usepackage{hyperref}
+\usetikzlibrary{trees}
+\usepackage{tikz-qtree}
+\usepackage{graphicx,float}
+\setlength{\oddsidemargin}{.0in}
+\setlength{\evensidemargin}{.0in}
+\setlength{\textwidth}{6.5in}
+\setlength{\topmargin}{-0.4in}
+\setlength{\textheight}{8.5in}
+
+\addbibresource{bibliography.bib}
+\graphicspath{ {mnist/mistakeims/} }
+
+\newcommand{\handout}[5]{
+   \renewcommand{\thepage}{#1, Page \arabic{page}}
+   \noindent
+   \begin{center}
+   \framebox{
+      \vbox{
+    \hbox to 5.78in { {\bf \course} \hfill #2 }
+       \vspace{4mm}
+       \hbox to 5.78in { {\Large \hfill #5  \hfill} }
+       \vspace{2mm}
+       \hbox to 5.78in { {\it #3 \hfill #4} }
+      }
+   }
+   \end{center}
+   \vspace*{4mm}
+}
+
+\newcommand{\LCA}{\mbox{\sf LCA}}
+
+\newcommand{\rs}{\rightsquigarrow}
+\newcommand{\ls}{\leftsquigarrow}
+
+\newcounter{pppp}
+\newcommand{\prob}{\arabic{pppp}}  %problem number
+\newcommand{\increase}{\addtocounter{pppp}{1}}  %problem number
+
+%first argument desription, second number of points
+\newcommand{\newproblem}[1]{
+\ifnum\me=0
+\ifnum\prob>0 \newpage \fi
+\increase
+\setcounter{page}{1}
+\handout{\name, Assignment \num, Section \arabic{pppp}}{\today}{Team: \name}{Due:
+\due}{Solutions to Assignment \num}
+\section*{Problem \prob~ - #1 \hfill}
+\else
+\increase
+\section*{Problem \num-\prob~ - #1 \hfill}
+\fi
+}
+
+%\newcommand{\newproblem}[2]{\increase
+%\section*{Problem \num-\prob~(#1) \hfill {#2}}
+%}
+
+\def\squarebox#1{\hbox to #1{\hfill\vbox to #1{\vfill}}}
+\def\qed{\hspace*{\fill}
+        \vbox{\hrule\hbox{\vrule\squarebox{.667em}\vrule}\hrule}}
+\newenvironment{solution}{\begin{trivlist}\item[]{\bf Solution:}}
+                      {\qed \end{trivlist}}
+\newenvironment{solsketch}{\begin{trivlist}\item[]{\bf Solution Sketch:}}
+                      {\qed \end{trivlist}}
+\newenvironment{code}{\begin{tabbing}
+12345\=12345\=12345\=12345\=12345\=12345\=12345\=12345\= \kill }
+{\end{tabbing}}
+
+%%%%%\newcommand{\eqref}[1]{Equation~(\ref{eq:#1})}
+
+\newcommand{\hint}[1]{({\bf Hint}: {#1})}
+%Put more macros here, as needed.
+\newcommand{\room}{\medskip\ni}
+\newcommand{\brak}[1]{\langle #1 \rangle}
+\newcommand{\bit}[1]{\{0,1\}^{#1}}
+\newcommand{\zo}{\{0,1\}}
+\newcommand{\C}{{\cal C}}
+
+\newcommand{\nin}{\not\in}
+\newcommand{\set}[1]{\{#1\}}
+\renewcommand{\ni}{\noindent}
+\renewcommand{\gets}{\leftarrow}
+\renewcommand{\to}{\rightarrow}
+\newcommand{\assign}{:=}
+\newcommand{\cT}{\mathcal{T}}
+
+\DeclareMathOperator*{\E}{E}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\ORA}{\vee}
+\newcommand{\R}{\mathbb{R}}
+
+%\DeclarePairedDelimiter{\abs}{\lvert}{\rvert}
+%\DeclarePairedDelimiter{\norm}{\lVert}{\rVert}
+\DeclarePairedDelimiter{\inprod}{\langle}{\rangle}
+
+\newcommand\Perm[2][n]{\prescript{#1\mkern-2.5mu}{}P_{#2}}
+
+\newcommand{\AND}{\wedge}
+\newcommand{\OR}{\vee}
+
+\newcommand{\mexp}{\mathrm{e}}
+
+\makeatletter
+\newtoks\@tabtoks
+\newcommand\addtabtoks[1]{\global\@tabtoks\expandafter{\the\@tabtoks#1}}
+\newcommand\eaddtabtoks[1]{\edef\mytmp{#1}\expandafter\addtabtoks\expandafter{\mytmp}}
+\newcommand*\resettabtoks{\global\@tabtoks{}}
+\newcommand*\printtabtoks{\the\@tabtoks}
+\makeatother
+
+\allowdisplaybreaks
+
+
+\begin{document}
+
+
+\newproblem{More Backpropagation}
+
+
+\begin{enumerate}
+
+\item[1.1] \textbf{Backpropagation through a DAG of modules}
+\ifnum\me<2
+\begin{solution}\\
+Let $o_{max}$ be the output of the \texttt{max} module, and $o_{min}$ be the output of the \texttt{min} module.
+
+Let $i_1$ be the output of the first \texttt{sigmoid} module, and $i_2$ be the output of the second \texttt{sigmoid} module. Furthermore, let $i = \begin{bmatrix} i_1 \\ i_2 \end{bmatrix}$.
+
+We have:
+\begin{align*}
+\frac{\partial o_{max}}{\partial x_1} &= \frac{\partial o_{max}}{\partial i} \frac{\partial i}{\partial x_1}\\
+&= \begin{bmatrix} \frac{\partial o_{max}}{\partial i_1} & \frac{\partial o_{max}}{\partial i_2} \end{bmatrix} \begin{bmatrix} \frac{\partial i_1}{\partial x_1} \\ \frac{\partial i_2}{\partial x_1} \end{bmatrix}\\
+&= \begin{bmatrix} 1_{i_1 \geq i_2} & 1_{i_1 < i_2} \end{bmatrix} \begin{bmatrix} \frac{\partial i_1}{\partial x_1} \\ \frac{\partial i_2}{\partial x_1} \end{bmatrix}\\
+&= \left(\frac{\partial i_1}{\partial x_1}\right)_{i_1 \geq i_2} + \left(\frac{\partial i_2}{\partial x_1}\right)_{i_1 < i_2}
+\end{align*}
+
+Similarly, we have:
+\begin{align*}
+\frac{\partial o_{min}}{\partial x_1} &= \frac{\partial o_{min}}{\partial i} \frac{\partial i}{\partial x_1}\\
+&= \begin{bmatrix} \frac{\partial o_{min}}{\partial i_1} & \frac{\partial o_{min}}{\partial i_2} \end{bmatrix} \begin{bmatrix} \frac{\partial i_1}{\partial x_1} \\ \frac{\partial i_2}{\partial x_1} \end{bmatrix}\\
+&= \begin{bmatrix} 1_{i_1 < i_2} & 1_{i_1 \geq i_2} \end{bmatrix} \begin{bmatrix} \frac{\partial i_1}{\partial x_1} \\ \frac{\partial i_2}{\partial x_1} \end{bmatrix}\\
+&= \left(\frac{\partial i_1}{\partial x_1}\right)_{i_1 < i_2} + \left(\frac{\partial i_2}{\partial x_1}\right)_{i_1 \geq i_2}
+\end{align*}
+
+Finally, we have:
+\begin{align*}
+\frac{\partial E}{\partial x_1} &= \frac{\partial E}{\partial y} \frac{\partial (o_{max} + o_{min})}{\partial x_1}\\
+&= \frac{\partial E}{\partial y} \left( \frac{\partial o_{max}}{\partial x_1} + \frac{\partial o_{min}}{\partial x_1} \right)\\
+&= \frac{\partial E}{\partial y} \left( \left(\frac{\partial i_1}{\partial x_1}\right)_{i_1 \geq i_2} + \left(\frac{\partial i_2}{\partial x_1}\right)_{i_1 < i_2} + \left(\frac{\partial i_1}{\partial x_1}\right)_{i_1 < i_2} + \left(\frac{\partial i_2}{\partial x_1}\right)_{i_1 \geq i_2} \right)\\
+&= \frac{\partial E}{\partial y} \left( \frac{\partial i_1}{\partial x_1} + \frac{\partial i_2}{\partial x_1} \right) \tag{Only one of $i_1 \geq i_2$ or $i_1 < i_2$ can be true}\\
+&= \frac{\partial E}{\partial y} \frac{\partial i_1}{\partial x_1} \tag{$i_2$ does not depend on $x_1$}\\
+&= \frac{\partial E}{\partial y} \cdot \frac{\partial}{\partial x_1} \frac{1}{1+e^{-x_1}}\\
+&= \frac{\partial E}{\partial y} \frac{e^{-x_1}}{(1+e^{-x_1})^2}\\
+&= \frac{\partial E}{\partial y} \frac{e^{x_1}}{(e^{x_1}+1)^2}\\
+\end{align*}
+
+From the network structure, we can see that the partial derivatives of $o_{max}$ and $o_{min}$ and with respect to $x_2$ would be the same as that with respect to $x_1$, since all the dependencies are similar beyond that layer.
+
+Thus, we have:
+\begin{align*}
+\frac{\partial o_{max}}{\partial x_2} &= \left(\frac{\partial i_1}{\partial x_2}\right)_{i_1 \geq i_2} + \left(\frac{\partial i_2}{\partial x_2}\right)_{i_1 < i_2}\\
+\frac{\partial o_{min}}{\partial x_2} &= \left(\frac{\partial i_1}{\partial x_2}\right)_{i_1 < i_2} + \left(\frac{\partial i_2}{\partial x_2}\right)_{i_1 \geq i_2}
+\end{align*}
+
+And similar to above, we get:
+\begin{align*}
+\frac{\partial E}{\partial x_2} &= \frac{\partial E}{\partial y} \left( \left(\frac{\partial i_1}{\partial x_2}\right)_{i_1 \geq i_2} + \left(\frac{\partial i_2}{\partial x_2}\right)_{i_1 < i_2} + \left(\frac{\partial i_1}{\partial x_2}\right)_{i_1 < i_2} + \left(\frac{\partial i_2}{\partial x_2}\right)_{i_1 \geq i_2} \right)\\
+&= \frac{\partial E}{\partial y} \left( \frac{\partial i_1}{\partial x_2} + \frac{\partial i_2}{\partial x_2} \right) \tag{Only one of $i_1 \geq i_2$ or $i_1 < i_2$ can be true}\\
+&= \frac{\partial E}{\partial y} \frac{e^{x_2}}{(e^{x_2}+1)^2}
+\end{align*}
+
+\end{solution}
+\fi
+
+
+\item[1.2] \textbf{Batch Normalization}
+\ifnum\me<2
+\begin{solution}\\
+TODO
+\end{solution}
+\fi
+
+
+\end{enumerate}
+
+
+\printbibliography
+\end{document}
