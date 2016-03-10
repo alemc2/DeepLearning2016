@@ -26,7 +26,7 @@ cmd:option('-learningRate', 1e-3, 'learning rate at t=0')
 cmd:option('-beta1', 0.9, 'beta1 (for Adam)')
 cmd:option('-beta2', 0.999, 'beta2 (for Adam)')
 cmd:option('-epsilon', 1e-8, 'epsilon (for Adam)')
-cmd:option('-batchSize', 64, 'mini-batch size (1 = pure stochastic)')
+cmd:option('-batchSize', 32, 'mini-batch size (1 = pure stochastic)')
 cmd:option('-weightDecay', 0, 'weight decay (SGD only)')
 cmd:option('-momentum', 0, 'momentum (SGD only)')
 cmd:option('-patience', 100, 'minimum number of epochs to train for')
@@ -96,7 +96,7 @@ if opt.trainconn > 1 then
    connLayer.accGradParameters = function() end
 end
 
-firstLayer = nn.SpatialConvolution(3, 96, 13, 13, 4, 4)
+firstLayer = nn.SpatialConvolution(3, 96, 13, 13)
 firstLayer.bias:zero()
 firstLayer.weight = torch.load(opt.firstlayer).resized_kernels
 
@@ -110,10 +110,10 @@ for i=1, 24 do
    if opt.trainsecond > 1 then
       layer.bias:zero()
       layer.weight = torch.load(opt.secondprefix .. '_' .. i .. '.t7').resized_kernels
+      secondLayerAccGradParams = layer.accGradParameters
+      layer.accGradParameters = function() end
    end
 
-   secondLayerAccGradParams = layer.accGradParameters
-   layer.accGradParameters = function() end
    table.insert(secondLayer, layer)
 end
 
@@ -183,7 +183,7 @@ function train()
       connLayer.accGradParameters = connLayerAccGradParams
    end
 
-   if epoch == opt.trainsecond then
+   if epoch == opt.trainsecond and opt.trainsecond > 1 then
       print('turning on training for second layer')
       for i = 1, 24 do
          secondLayer[i].accGradParameters = secondLayerAccGradParams
