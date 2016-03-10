@@ -20,6 +20,7 @@ cmd:option('-trainfirst', 999, 'The epoch at which to start training first layer
 cmd:option('-secondprefix', 'models/second', 'Second layer centroids file prefix')
 cmd:option('-trainsecond', 999, 'The epoch at which to start training second layer. use 1 to always train.')
 cmd:option('-bestclassifier', 'models/best_classifier.net', 'The best classifier before clustering second layer.')
+cmd:option('-bestnet', 'models/best.net', 'The best classifier before clustering second layer.')
 cmd:option('-trainconn', 1, 'The epoch at which to start training connection layer. use 1 to always train.')
 cmd:option('-learningRate', 1e-3, 'learning rate at t=0')
 cmd:option('-beta1', 0.9, 'beta1 (for Adam)')
@@ -243,10 +244,7 @@ function train()
       local filename = 'models/recent.net'
       os.execute('mkdir -p ' .. sys.dirname(filename))
       print('==> saving model to '..filename)
-      saveModel = model:clone()
-      saveModel:remove(1)
-      torch.save(filename, {model=saveModel, testData=provider.testData})
-      saveModel = nil
+      torch.save(filename, {model=model, testData=provider.testData})
    end
 
    confusion:zero()
@@ -326,13 +324,10 @@ while true do
       end
 
       bestAcc = acc
-      bestModel = model:clone()
-      local filename = 'models/best.net'
+      local filename = opt.bestnet --'models/best.net'
       os.execute('mkdir -p ' .. sys.dirname(filename))
       print('==> saving final model to '..filename)
-      bestModel:remove(1)
-      torch.save(filename, {model=bestModel, testData=provider.testData})
-      bestModel = nil
+      torch.save(filename, {model=model, testData=provider.testData})
    end
 
    print('Best model accuracy is ' .. bestAcc)
