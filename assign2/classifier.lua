@@ -55,6 +55,10 @@ do -- data augmentation module
          local flip_mask = torch.randperm(bs):le(bs/2)
          for i=1,bs do
             if flip_mask[i] == 1 then image.hflip(input[i], input[i]) end
+            --Before converting to gmimage scale range to 0-1 using minmax.. Will be rescaled back.
+            local im_min = input[i]:min()
+            local im_max = input[i]:max()
+            input[1] = image.minmax{tensor=input[1],min=im_min,max=im_max}
             local gmimage = gm.Image(input[i],'RGB','DHW')
             -- Detect edge average color to fill black regions after augmentation
             local rmean = (input[{i,1,{},1}]:sum()+input[{i,1,1,{}}]:sum()+input[{i,1,{},imwidth}]:sum()+input[{i,1,imheight,{}}]:sum())/(2*(imheight+imwidth))
@@ -75,6 +79,8 @@ do -- data augmentation module
             -- If image got bigger due to scaling/rotation we crop to keep image at same height and indicate loss of patches. Resize to original size if smaller. So down scaling isn't perfect yet.
             gmimage:crop(imwidth,imheight,(gmw-imwidth)/2,(gmh-imheight)/2):size(imwidth,imheight)
             input[i] = gmimage:toTensor('float','RGB','DHW')
+            -- Rescale range back to original
+            input[i]:mul(im_max-im_min):add(im_min)
          end
       end
       self.output:set(input)
