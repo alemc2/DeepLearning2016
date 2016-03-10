@@ -3,6 +3,7 @@ require 'image'   -- for color transforms
 require 'nn'      -- provides a normalization operator
 require 'cunn'
 require 'optim'
+gm = require 'graphicsmagick'
 
 dofile 'provider.lua'
 
@@ -48,9 +49,31 @@ do -- data augmentation module
    function DataAugment:updateOutput(input)
       if self.train then
          local bs = input:size(1)
+         local imheight = input:size(3)
+         local imwidth = input:size(4)
          local flip_mask = torch.randperm(bs):le(bs/2)
-         for i=1,input:size(1) do
+         for i=1,bs do
             if flip_mask[i] == 1 then image.hflip(input[i], input[i]) end
+            local gmimage = gm.Image(input[i],'RGB','DHW')
+            -- Detect edge average color to fill black regions after augmentation
+            local rmean = (input[{i,1,{},1}]:sum()+input[{i,1,1,{}}]:sum()+input[{i,1,{},imwidth}]:sum()+input[{i,1,imheight,{}}]:sum())/(2*(imheight+imwidth))
+            local gmean = (input[{i,2,{},1}]:sum()+input[{i,2,1,{}}]:sum()+input[{i,2,{},imwidth}]:sum()+input[{i,2,imheight,{}}]:sum())/(2*(imheight+imwidth))
+            local bmean = (input[{i,3,{},1}]:sum()+input[{i,3,1,{}}]:sum()+input[{i,3,{},imwidth}]:sum()+input[{i,3,imheight,{}}]:sum())/(2*(imheight+imwidth))
+            -- Rotation angle between -15 and 15 degrees
+            -- This parameter with the scaling constants/some extra constants can be used to introduce shear but not doing for now as I am unable to figure exact relation to shear angle
+            local theta = torch.rand(1):mul(math.pi/8):add(-math.pi/16)[1]
+            -- Translation parameters +/- 2 pixels
+            local tx = torch.random(-2,2)
+            local ty = torch.random(-2,2)
+            -- Scaling parameters 0.8-1.2 times
+            local sx = (((torch.rand(1)-0.5)*0.2)+1)[1]
+            local sy = (((torch.rand(1)-0.5)*0.2)+1)[1]
+            -- Set backgroundand perform affine transform
+            gmimage:setBackground(rmean,gmean,bmean):affineTransform(sx*math.cos(theta), sx*math.sin(theta), -sy*math.sin(theta), sy*math.cos(theta),tx,ty)
+            gmw,gmh = gmimage:size()
+            -- If image got bigger due to scaling/rotation we crop to keep image at same height and indicate loss of patches. Resize to original size if smaller. So down scaling isn't perfect yet.
+            gmimage:crop(imwidth,imheight,(gmw-imwidth)/2,(gmh-imheight)/2):size(imwidth,imheight)
+            input[i] = gmimage:toTensor('float','RGB','DHW')
          end
       end
       self.output:set(input)
