@@ -58,7 +58,15 @@ do -- data augmentation module
             --Before converting to gmimage scale range to 0-1 using minmax.. Will be rescaled back.
             local im_min = input[i]:min()
             local im_max = input[i]:max()
-            input[1] = image.minmax{tensor=input[1],min=im_min,max=im_max}
+            input[i] = image.minmax{tensor=input[i],min=im_min,max=im_max}
+            -- Perform color augmentation here as per http://arxiv.org/vc/arxiv/papers/1501/1501.02876v1.pdf
+            local rshift = torch.uniform(-20/255,20/255)
+            local gshift = torch.uniform(-20/255,20/255)
+            local bshift = torch.uniform(-20/255,20/255)
+            input[i][1]:add(rshift)
+            input[i][2]:add(gshift)
+            input[i][3]:add(bshift)
+            -- Use gmimage to do affine transforms
             local gmimage = gm.Image(input[i],'RGB','DHW')
             -- Detect edge average color to fill black regions after augmentation
             local rmean = (input[{i,1,{},1}]:sum()+input[{i,1,1,{}}]:sum()+input[{i,1,{},imwidth}]:sum()+input[{i,1,imheight,{}}]:sum())/(2*(imheight+imwidth))
@@ -70,14 +78,15 @@ do -- data augmentation module
             -- Translation parameters +/- 2 pixels
             local tx = torch.random(-2,2)
             local ty = torch.random(-2,2)
-            -- Scaling parameters 0.8-1.2 times
+            -- Scaling parameters 0.8-1.2 times. Also does strech when aspect ratio is lost
             local sx = (((torch.rand(1)-0.5)*0.2)+1)[1]
             local sy = (((torch.rand(1)-0.5)*0.2)+1)[1]
             -- Set backgroundand perform affine transform
             gmimage:setBackground(rmean,gmean,bmean):affineTransform(sx*math.cos(theta), sx*math.sin(theta), -sy*math.sin(theta), sy*math.cos(theta),tx,ty)
             gmw,gmh = gmimage:size()
-            -- If image got bigger due to scaling/rotation we crop to keep image at same height and indicate loss of patches. Resize to original size if smaller. So down scaling isn't perfect yet.
-            gmimage:crop(imwidth,imheight,(gmw-imwidth)/2,(gmh-imheight)/2):size(imwidth,imheight)
+            -- If image got bigger due to scaling/rotation we crop to keep image at same height and indicate loss of patches. Fill area if smaller.
+            -- Also have resize at end to avoid any discrepancy between odd even even sizes when adding border to fill area.
+            gmimage:crop(imwidth,imheight,(gmw-imwidth)/2,(gmh-imheight)/2):addBorder((imwidth-gmw)/2,(imheight-gmh)/2,rmean,gmean,bmean):size(imwidth,imheight)
             input[i] = gmimage:toTensor('float','RGB','DHW')
             -- Rescale range back to original
             input[i]:mul(im_max-im_min):add(im_min)
@@ -210,7 +219,7 @@ function train()
    for t,v in ipairs(indices) do
       xlua.progress(t, #indices)
 
-      local inputs = provider.trainData.data:index(1,v)
+      local inputs = provider.trainData.data:index(1,v):clone()
       targets:copy(provider.trainData.labels:index(1,v))
 
       local feval = function(x)
