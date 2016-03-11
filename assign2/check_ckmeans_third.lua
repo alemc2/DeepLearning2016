@@ -2,14 +2,14 @@ require 'xlua'
 require 'optim'
 require 'unsup'
 require 'ckmeans_enh'
-dofile './provider_second.lua'
+dofile './provider_third.lua'
 
 cmd = torch.CmdLine()
 cmd:text()
 cmd:text('Options:')
-cmd:option('-numWindows', 500000, 'Number of windows')
-cmd:option('-batchSize', 5000, 'Batch size')
-cmd:option('-saveFile', 'models/ckmeans_second64x3x3.t7', 'Save filename')
+cmd:option('-numWindows', 400000, 'Number of windows')
+cmd:option('-batchSize', 20000, 'Batch size')
+cmd:option('-saveFile', 'models/ckmeans_third128x3x3.t7', 'Save filename')
 cmd:text()
 opt = cmd:parse(arg or {})
 
@@ -17,16 +17,16 @@ print('will save kernels to '..opt.saveFile)
 
 torch.setnumthreads(8)
 
-provider_second = Provider_Second()
+provider_third = Provider_Third()
 collectgarbage()
 
-data_dim = {64,24,24}
+data_dim = {128,8,8}
 pSize = 3
-trsize = provider_second.secondData:size()
+trsize = provider_third.thirdData:size()
 numWindows = opt.numWindows
 
 print("==> find clusters")
-ncentroids = 128
+ncentroids = 256
 
 --Define a callback to display filters at each iteration
 function dispfilters (step,c_kernels,c_counts)
@@ -62,5 +62,5 @@ function dispfilters (step,c_kernels,c_counts)
    collectgarbage()
 end
 
-kernels, counts = unsup.ckmeans(provider_second, ncentroids, data_dim[1], pSize, pSize , numWindows, 15, opt.batchSize, dispfilters, true)
+kernels, counts = unsup.ckmeans(provider_third, ncentroids, data_dim[1], pSize, pSize , numWindows, 15, opt.batchSize, dispfilters, true)
 --dispfilters(10,kernels,counts)

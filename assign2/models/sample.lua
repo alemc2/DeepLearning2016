@@ -10,17 +10,25 @@ local function ConvBNReLU(nInputPlane, nOutputPlane)
   return vgg
 end
 
+-- building block
+local function ConvBNReLUPreload(layer, nOutputPlane)
+  vgg:add(layer)
+  vgg:add(nn.SpatialBatchNormalization(nOutputPlane,1e-3))
+  vgg:add(nn.ReLU(true))
+  return vgg
+end
+
 -- Will use "ceil" MaxPooling because we want to save as much
 -- space as we can
 local MaxPooling = nn.SpatialMaxPooling
 
-ConvBNReLU(3,64)
+ConvBNReLUPreload(firstLayer,64)
 vgg:add(MaxPooling(4,4,4,4):ceil())
 
-ConvBNReLU(64,128)
+ConvBNReLUPreload(secondLayer,128)
 vgg:add(MaxPooling(3,3,3,3):ceil())
 
-ConvBNReLU(128,256)
+ConvBNReLUPreload(thirdLayer,256)
 ConvBNReLU(256,256)
 vgg:add(MaxPooling(2,2,2,2):ceil())
 

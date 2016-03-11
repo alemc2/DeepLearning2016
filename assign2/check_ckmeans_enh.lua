@@ -12,12 +12,12 @@ provider_unlabel = Provider_Unlabel()
 collectgarbage()
 
 data_dim = {3,96,96}
-pSize = 13
+pSize = 3
 trsize = provider_unlabel.unlabeledData:size()
-numWindows = 350000
+numWindows = 3000000
 
 print(c.blue "==> find clusters")
-ncentroids = 96
+ncentroids = 64+4
 
 --Define a callback to display filters at each iteration
 function dispfilters (step,c_kernels,c_counts)
@@ -46,7 +46,7 @@ function dispfilters (step,c_kernels,c_counts)
    end
    resized_kernels = c_kernels
 
-   sfile = 'models/ckmeans_'..ncentroids..'.t7'
+   sfile = 'models/ckmeans'..pSize..'x'..pSize..'_'..ncentroids..'.t7'
    print('==> saving centroids to disk: ' .. sfile)
    obj = {
        resized_kernels = resized_kernels,
@@ -56,7 +56,7 @@ function dispfilters (step,c_kernels,c_counts)
    torch.save(sfile, obj)
 end
 
-kernels, counts = unsup.ckmeans(provider_unlabel, ncentroids, 3, pSize, pSize , numWindows, 15, 5000, dispfilters, true)
+kernels, counts = unsup.ckmeans(provider_unlabel, ncentroids, 3, pSize, pSize , numWindows, 15, 100000, dispfilters, true)
 print("==> select distinct features")
 --resized_kernels = dispfilters(10,kernels,counts)
 

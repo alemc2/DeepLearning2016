@@ -4,32 +4,32 @@ require 'xlua'
 
 torch.setdefaulttensortype('torch.FloatTensor')
 
-local Provider_Second = torch.class 'Provider_Second'
+local Provider_Third = torch.class 'Provider_Third'
 
-function Provider_Second:__init()
+function Provider_Third:__init()
   local trsize = 100000
 
-  self.secondData = {
-     data = torch.load('stl-10/secondlevel.t7'),
+  self.thirdData = {
+     data = torch.load('stl-10/thirdlevel.t7'),
      size = function() return trsize end
   }
   collectgarbage()
 end
 
-function Provider_Second:getData(start,bsize,kw,kh,nch)
-    local second_data = self.secondData
+function Provider_Third:getData(start,bsize,kw,kh,nch)
+    local third_data = self.thirdData
     local numpatches = (kh+1)*(kw+1)
     local ndims = nch*kh*kw
     local batches = torch.Tensor(bsize*numpatches,ndims)
 
     local trsize = 100000
-    local height = 24
-    local width = 24
+    local height = 8
+    local width = 8
     --print('getting data')
     for i = start, start+bsize-1 do
        local wr = torch.random(height - 2*kh + 1)
        local wc = torch.random(width - 2*kw + 1)
-       local window = second_data.data[{math.fmod(i-1,trsize)+1,{},{wr,wr+2*kh-1},{wc,wc+2*kw-1}}]
+       local window = third_data.data[{math.fmod(i-1,trsize)+1,{},{wr,wr+2*kh-1},{wc,wc+2*kw-1}}]
        for r = 1,kh+1 do
            for c = 1,kw+1 do
                batches[(i-start)*numpatches + (r-1)*(kw+1) + c] = window[{ {}, {r, r+kh-1 }, {c, c+kw-1} }]:reshape(ndims)

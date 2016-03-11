@@ -9,10 +9,10 @@ dofile './augmentdummy.lua'
 cmd = torch.CmdLine()
 cmd:text()
 cmd:text('Options:')
-cmd:option('-modelfile', 'models/bestFirst.net', 'Model file name')
+cmd:option('-modelfile', 'models/bestSecond.net', 'Model file name')
 cmd:option('-batchSize', 150, 'batch size')
-cmd:option('-numgroups', 64, 'Number of groups')
-cmd:option('-mapsize', 24, 'Output feature map size')
+cmd:option('-numgroups', 128, 'Number of groups')
+cmd:option('-mapsize', 8, 'Output feature map size')
 cmd:text()
 opt = cmd:parse(arg or {})
 
@@ -30,7 +30,7 @@ print (model)
 
 print ('\n==> after changing model:')
 size = model:get(3):size()
-removeLayers = 23
+removeLayers = 19
 for i=size,size-removeLayers+1,-1 do
    model:get(3):remove(i)
 end
@@ -90,7 +90,7 @@ function generate()
    print("\n==> time to test 1 sample = " .. (time*1000) .. 'ms')
 
    print('==> saving data')
-   torch.save('stl-10/secondlevel.t7', finalout)
+   torch.save('stl-10/thirdlevel.t7', finalout)
 end
 
 generate()

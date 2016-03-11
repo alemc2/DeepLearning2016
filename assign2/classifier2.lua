@@ -3,6 +3,7 @@ require 'image'   -- for color transforms
 require 'nn'      -- provides a normalization operator
 require 'cunn'
 require 'optim'
+gm = require 'graphicsmagick'
 
 dofile 'provider.lua'
 
@@ -13,12 +14,13 @@ cmd:text()
 cmd:text('Options:')
 cmd:option('-threads', 8, 'number of threads')
 cmd:option('-optimization', 'ADAM', 'optimization method: SGD | ADAM')
-cmd:option('-model', 'vgg2', 'Model name')
-cmd:option('-firstlayer', 'models/vggmeans2_64.t7', 'First layer centroids')
+cmd:option('-model', 'sample', 'Model name')
+cmd:option('-firstlayer', 'models/ckmeans3x3b_64.t7', 'First layer centroids')
 cmd:option('-trainfirst', 999, 'The epoch at which to start training first layer')
-cmd:option('-secondprefix', 'models/second', 'Second layer centroids file prefix')
-cmd:option('-trainsecond', 999, 'The epoch at which to start training second layer. use 1 to always train.')
-cmd:option('-trainconn', 1, 'The epoch at which to start training connection layer. use 1 to always train.')
+cmd:option('-secondlayer', 'models/ckmeans_second64x3x3.t7', 'Second layer centroids')
+cmd:option('-trainsecond', 999, 'The epoch at which to start training second layer')
+cmd:option('-thirdlayer', 'models/ckmeans_third128x3x3.t7', 'Third layer centroids')
+cmd:option('-trainthird', 999, 'The epoch at which to start training third layer')
 cmd:option('-learningRate', 1e-3, 'learning rate at t=0')
 cmd:option('-beta1', 0.9, 'beta1 (for Adam)')
 cmd:option('-beta2', 0.999, 'beta2 (for Adam)')
@@ -27,7 +29,7 @@ cmd:option('-batchSize', 64, 'mini-batch size (1 = pure stochastic)')
 cmd:option('-weightDecay', 0, 'weight decay (SGD only)')
 cmd:option('-momentum', 0, 'momentum (SGD only)')
 cmd:option('-patience', 999, 'minimum number of epochs to train for')
-cmd:option('-epoch_step', 30, 'epoch step')
+cmd:option('-epoch_step', 25, 'epoch step')
 cmd:option('-improvementThreshold', 0.999, 'amount to multiply test accuracy to determine significant improvement')
 cmd:option('-patienceIncrease', 2, 'amount to multiply patience by on significant improvement')
 cmd:text()
@@ -63,26 +65,26 @@ provider = torch.load('provider.t7')
 
 print '==> construct model'
 
-firstLayer = nn.SpatialConvolution(3, 64, 7, 7, 2, 2, 3, 3)
+firstLayer = nn.SpatialConvolution(3, 64, 3,3, 1,1, 1,1)
 firstLayer.bias:zero()
 firstLayer.weight = torch.load(opt.firstlayer).resized_kernels
 
 firstLayerAccGradParams = firstLayer.accGradParameters
 firstLayer.accGradParameters = function() end
 
-secondLayer = {}
+secondLayer = nn.SpatialConvolution(64, 128, 3,3, 1,1, 1,1)
+secondLayer.bias:zero()
+secondLayer.weight = torch.load(opt.secondlayer).resized_kernels
 
-for i=1, 24 do
-   layer = nn.SpatialConvolution(4, 64, 5, 5)
-   if opt.trainsecond > 1 then
-      layer.bias:zero()
-      layer.weight = torch.load(opt.secondprefix .. '_' .. i .. '.t7').resized_kernels
-   end
+secondLayerAccGradParams = secondLayer.accGradParameters
+secondLayer.accGradParameters = function() end
 
-   secondLayerAccGradParams = layer.accGradParameters
-   layer.accGradParameters = function() end
-   table.insert(secondLayer, layer)
-end
+thirdLayer = nn.SpatialConvolution(128, 256, 3,3, 1,1, 1,1)
+thirdLayer.bias:zero()
+thirdLayer.weight = torch.load(opt.thirdlayer).resized_kernels
+
+thirdLayerAccGradParams = thirdLayer.accGradParameters
+thirdLayer.accGradParameters = function() end
 
 model = nn.Sequential()
 model:add(nn.DataAugment():float())
@@ -146,9 +148,12 @@ function train()
 
    if epoch == opt.trainsecond then
       print('turning on training for second layer')
-      for i = 1, 24 do
-         secondLayer[i].accGradParameters = secondLayerAccGradParams
-      end
+      secondLayer.accGradParameters = secondLayerAccGradParams
+   end
+
+   if epoch == opt.trainthird then
+      print('turning on training for third layer')
+      thirdLayer.accGradParameters = thirdLayerAccGradParams
    end
 
    -- drop learning rate every "epoch_step" epochs
@@ -165,7 +170,7 @@ function train()
    for t,v in ipairs(indices) do
       xlua.progress(t, #indices)
 
-      local inputs = provider.trainData.data:index(1,v)
+      local inputs = provider.trainData.data:index(1,v):clone() -- XXX cloning because augmentation screws stuff up
       targets:copy(provider.trainData.labels:index(1,v))
 
       local feval = function(x)
@@ -176,6 +181,7 @@ function train()
          local f = criterion:forward(outputs, targets)
          local df_do = criterion:backward(outputs, targets)
          model:backward(inputs, df_do)
+         --print(torch.sum(firstLayer.weight))
 
          confusion:batchAdd(outputs, targets)
 

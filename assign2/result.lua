@@ -18,7 +18,6 @@ do -- data augmentation module blank module
 
    function DataAugment:__init()
       parent.__init(self)
-      self.train = true
    end
 
    function DataAugment:updateOutput(input)
