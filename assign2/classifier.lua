@@ -53,6 +53,15 @@ do -- data augmentation module assume rgb for now
        end
    end
 
+   -- Contrast normalization based on hsv image data from http://papers.nips.cc/paper/5548-discriminative-unsupervised-feature-learning-with-convolutional-neural-networks.pdf
+   function contrastaugment_sv(img,s_factors,v_factors)
+       local hsv_img = image.rgb2hsv(img)
+       hsv_img[2]:pow(s_factors.s_pow):mul(s_factors.s_mul):add(s_factors.s_add)
+       hsv_img[3]:pow(v_factors.v_pow):mul(v_factors.v_mul):add(v_factors.v_add)
+       --Do inpace replace
+       img:set(image.hsv2rgb(hsv_img))
+   end
+
    local DataAugment,parent = torch.class('nn.DataAugment', 'nn.Module')
 
    function DataAugment:__init()
@@ -79,6 +88,10 @@ do -- data augmentation module assume rgb for now
             input[i][1]:add(rshift)
             input[i][2]:add(gshift)
             input[i][3]:add(bshift)
+            -- Perform contrast augmentation
+            local s_factors = {s_pow=torch.uniform(0.25,2),s_mul=torch.uniform(0.7,1.4),s_add=torch.uniform(-0.1,0.1)}
+            local v_factors = {v_pow=torch.uniform(0.25,2),v_mul=torch.uniform(0.7,1.4),v_add=torch.uniform(-0.1,0.1)}
+            contrastaugment_sv(input[i],s_factors,v_factors)
             -- Use gmimage to do affine transforms
             local gmimage = gm.Image(input[i],'RGB','DHW')
             -- Detect edge average color to fill black regions after augmentation
