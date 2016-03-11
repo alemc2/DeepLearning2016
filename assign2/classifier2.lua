@@ -209,7 +209,7 @@ function train()
       local filename = 'models/recent.net'
       os.execute('mkdir -p ' .. sys.dirname(filename))
       print('==> saving model to '..filename)
-      torch.save(filename, {model=model, testData=provider.testData})
+      torch.save(filename, {model=model, means={mean_u = provider.mean_u, std_u  = provider.std_u, mean_v = provider.mean_v, std_v  = provider.std_v}})
    end
 
    confusion:zero()
@@ -291,7 +291,7 @@ while true do
       local filename = 'models/best.net'
       os.execute('mkdir -p ' .. sys.dirname(filename))
       print('==> saving final model to '..filename)
-      torch.save(filename, {model=model, testData=provider.testData})
+      torch.save(filename, {model=model, means={mean_u = provider.mean_u, std_u  = provider.std_u, mean_v = provider.mean_v, std_v  = provider.std_v}})
    end
 
    print('Best model accuracy is ' .. bestAcc)
