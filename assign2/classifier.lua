@@ -39,7 +39,20 @@ opt = cmd:parse(arg or {})
 torch.setdefaulttensortype('torch.FloatTensor')
 torch.setnumthreads(opt.threads)
 
-do -- data augmentation module
+do -- data augmentation module assume rgb for now
+   function vignette(img,darken_factor) --darken_factor roughly indicates how fast it fades. Higher = more fading
+       local nch = img:size(1)
+       local imh = img:size(2)
+       local imw = img:size(3)
+       local maxdist = math.sqrt(imh^2+imw^2)/2
+       for i = 1,imh do
+           for j = 1,imw do
+               local dist = math.sqrt((i-imh/2)^2 + (j-imw/2)^2)
+               img[{{},i,j}]:mul(math.max(0,1-darken_factor*dist/maxdist))
+           end
+       end
+   end
+
    local DataAugment,parent = torch.class('nn.DataAugment', 'nn.Module')
 
    function DataAugment:__init()
@@ -88,6 +101,8 @@ do -- data augmentation module
             -- Also have resize at end to avoid any discrepancy between odd even even sizes when adding border to fill area.
             gmimage:crop(imwidth,imheight,(gmw-imwidth)/2,(gmh-imheight)/2):addBorder((imwidth-gmw)/2,(imheight-gmh)/2,rmean,gmean,bmean):size(imwidth,imheight)
             input[i] = gmimage:toTensor('float','RGB','DHW')
+            --Once affine transform done do vignette.. No need to assign, does inplace
+            vignette(input[i],torch.uniform(0,1.2))
             -- Rescale range back to original
             input[i]:mul(im_max-im_min):add(im_min)
          end
