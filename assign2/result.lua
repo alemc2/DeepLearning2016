@@ -33,6 +33,34 @@ function parseDataLabel(d, numSamples, numChannels, height, width)
    return t, l
 end
 
+do
+   local RescaleModule,parent = torch.class('nn.RescaleModule', 'nn.Module')
+
+   function RescaleModule:__init(scale_factor)
+      parent.__init(self)
+      self.scale_factor = scale_factor;
+   end
+
+   function RescaleModule:updateOutput(input)
+      local bs = input:size(1)
+      local nch = input:size(2)
+      local imheight = input:size(3)
+      local imwidth = input:size(4)
+      self.output = torch.CudaTensor(bs,nch,imheight*self.scale_factor,imwidth*self.scale_factor)
+      for i=1,bs do
+         self.output[i]:copy(image.scale(input[i]:float(),imwidth*self.scale_factor,imheight*self.scale_factor))
+      end
+      return self.output
+   end
+
+   function RescaleModule:updateGradInput(input, gradOutput)
+      --assert(input:nElement() == gradOutput:nElement())
+
+      self.gradInput = gradOutput:resizeAs(input)
+      return self.gradInput
+   end
+end
+
 do -- data augmentation module blank module
    local DataAugment,parent = torch.class('nn.DataAugment', 'nn.Module')
 

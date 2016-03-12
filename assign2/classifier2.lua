@@ -324,7 +324,7 @@ function test()
       -- disp progress
       xlua.progress(i, provider.valData.size())
 
-      local inputs = provider.valData.data:narrow(1,i,bs)
+      local inputs = provider.valData.data:narrow(1,i,bs):clone()
       local outputs = model:forward(inputs)
       confusion:batchAdd(outputs, provider.valData.labels:narrow(1,i,bs))
    end
