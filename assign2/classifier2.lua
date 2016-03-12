@@ -14,7 +14,7 @@ cmd:text()
 cmd:text('Options:')
 cmd:option('-threads', 8, 'number of threads')
 cmd:option('-optimization', 'ADAM', 'optimization method: SGD | ADAM')
-cmd:option('-model', 'sample', 'Model name')
+cmd:option('-model', 'outer', 'Model name')
 cmd:option('-firstlayer', 'models/ckmeans3x3b_64.t7', 'First layer centroids')
 cmd:option('-trainfirst', 8, 'The epoch at which to start training first layer')
 cmd:option('-secondlayer', 'models/ckmeans_second64x3x3.t7', 'Second layer centroids')
@@ -164,10 +164,10 @@ fourthLayer.accGradParameters = function() end
 
 model = nn.Sequential()
 model:add(nn.DataAugment():float())
-model:add(nn.Copy('torch.FloatTensor','torch.CudaTensor'):cuda())
+--model:add(nn.Copy('torch.FloatTensor','torch.CudaTensor'):cuda())
 model:add(dofile('models/'..opt.model..'.lua'):cuda())
 
-criterion = nn.CrossEntropyCriterion():cuda()
+criterion = nn.ClassNLLCriterion():cuda()
 
 
 print '==> here is the model:'
