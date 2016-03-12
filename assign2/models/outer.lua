@@ -22,16 +22,16 @@ do
    end
 
    function RescaleModule:updateGradInput(input, gradOutput)
-      assert(input:nElement() == gradOutput:nElement())
+      --assert(input:nElement() == gradOutput:nElement())
 
-      self.gradInput = gradOutput:view(input:size())
+      self.gradInput = gradOutput:resizeAs(input)
       return self.gradInput
    end
 end
 
 local outer = nn.Sequential()
 local concatlayer = nn.Concat(3) -- 3 because of batch
-local numscales = 1 -- TODO set to 3
+local numscales = 3
 local rescale_factors = {1,2/3,1/3}
 local model_files = {'sample', 'sample64', 'sample32'}
 
@@ -43,6 +43,7 @@ for i = 1,numscales do
     cmul_layer.weight = torch.ones(10)
     seq_container:add(cmul_layer)
     seq_container:add(nn.View(10,1))
+    seq_container:add(nn.Contiguous()) -- This is needed as gradoutputs coming from outside concat are not contiguous by the nature of concat
     concatlayer:add(seq_container)
 end
 
