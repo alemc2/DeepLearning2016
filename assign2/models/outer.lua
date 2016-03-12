@@ -10,18 +10,22 @@ do
    end
 
    function RescaleModule:updateOutput(input)
-      input = input:float()
       local bs = input:size(1)
       local nch = input:size(2)
       local imheight = input:size(3)
       local imwidth = input:size(4)
-      self.output = torch.Tensor(bs,nch,imheight*self.scale_factor,imwidth*self.scale_factor)
+      self.output = torch.CudaTensor(bs,nch,imheight*self.scale_factor,imwidth*self.scale_factor)
       for i=1,bs do
-         self.output[i] = image.scale(input[i],imwidth*self.scale_factor,imheight*self.scale_factor)
+         self.output[i]:copy(image.scale(input[i]:float(),imwidth*self.scale_factor,imheight*self.scale_factor))
       end
-      input = input:cuda()
-      self.output = self.output:cuda()
       return self.output
+   end
+
+   function RescaleModule:updateGradInput(input, gradOutput)
+      assert(input:nElement() == gradOutput:nElement())
+
+      self.gradInput = gradOutput:view(input:size())
+      return self.gradInput
    end
 end
 
