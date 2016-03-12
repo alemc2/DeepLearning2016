@@ -50,6 +50,7 @@ end
 outer:add(concatlayer)
 outer:add(nn.Mean(3)) -- dim 3 for batch
 outer:add(nn.View(10))
+outer:add(nn.LogSoftMax())
 
 return outer
 

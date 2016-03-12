@@ -41,7 +41,7 @@ classifier:add(nn.BatchNormalization(256))
 classifier:add(nn.ReLU(true))
 classifier:add(nn.Dropout(0.4))
 classifier:add(nn.Linear(256,10))
-classifier:add(nn.LogSoftMax())
+classifier:add(nn.SoftMax())
 vgg:add(classifier)
 
 -- initialization from MSR
