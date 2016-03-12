@@ -25,13 +25,14 @@ end
 local outer = nn.Sequential()
 local concatlayer = nn.Concat(3) -- 3 because of batch
 local numscales = 3
-local rescale_factors = {2/3,1/3}
+local rescale_factors = {1,2/3,1/3}
+local model_files = {'sample', 'sample64', 'sample32'}
 
 for i in 1,numscales do
     local seq_container = nn.Sequential()
     seq_container:add(nn.RescaleModule(rescale_factors[i])) -- Rescaling
     seq_container:add(nn.Copy('torch.FloatTensor','torch.CudaTensor'):cuda())
-    seq_container:add(dofile('model/inner'..i..'.lua'):cuda())
+    seq_container:add(dofile('model/'..model_files[i]..'.lua'):cuda())
     local cmul_layer = nn.CMul(10)
     cmul_layer.weight = torch.ones(10)
     seq_container:add(cmul_layer:cuda())
