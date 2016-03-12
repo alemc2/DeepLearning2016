@@ -16,29 +16,55 @@ cmd:option('-threads', 8, 'number of threads')
 cmd:option('-optimization', 'ADAM', 'optimization method: SGD | ADAM')
 cmd:option('-model', 'sample', 'Model name')
 cmd:option('-firstlayer', 'models/ckmeans3x3b_64.t7', 'First layer centroids')
-cmd:option('-trainfirst', 999, 'The epoch at which to start training first layer')
+cmd:option('-trainfirst', 8, 'The epoch at which to start training first layer')
 cmd:option('-secondlayer', 'models/ckmeans_second64x3x3.t7', 'Second layer centroids')
-cmd:option('-trainsecond', 999, 'The epoch at which to start training second layer')
+cmd:option('-trainsecond', 8, 'The epoch at which to start training second layer')
 cmd:option('-thirdlayer', 'models/ckmeans_third128x3x3.t7', 'Third layer centroids')
-cmd:option('-trainthird', 999, 'The epoch at which to start training third layer')
+cmd:option('-trainthird', 8, 'The epoch at which to start training third layer')
+cmd:option('-fourthlayer', 'models/ckmeans_fourth256x3x3.t7', 'Fourth layer centroids')
+cmd:option('-trainfourth', 8, 'The epoch at which to start training fourth layer')
 cmd:option('-learningRate', 1e-3, 'learning rate at t=0')
+cmd:option('-learningRateDecay', 1e-7, 'learning rate decay (SGD)')
+cmd:option('-notest', 20, 'Number of epochs to skip testing for')
 cmd:option('-beta1', 0.9, 'beta1 (for Adam)')
 cmd:option('-beta2', 0.999, 'beta2 (for Adam)')
 cmd:option('-epsilon', 1e-8, 'epsilon (for Adam)')
 cmd:option('-batchSize', 64, 'mini-batch size (1 = pure stochastic)')
-cmd:option('-weightDecay', 0, 'weight decay (SGD only)')
-cmd:option('-momentum', 0, 'momentum (SGD only)')
-cmd:option('-patience', 999, 'minimum number of epochs to train for')
-cmd:option('-epoch_step', 25, 'epoch step')
+cmd:option('-weightDecay', 0.0005, 'weight decay (SGD only)')
+cmd:option('-momentum', 0.9, 'momentum (SGD only)')
+cmd:option('-patience', 300, 'minimum number of epochs to train for')
+cmd:option('-epoch_step', 50, 'epoch step')
 cmd:option('-improvementThreshold', 0.999, 'amount to multiply test accuracy to determine significant improvement')
-cmd:option('-patienceIncrease', 2, 'amount to multiply patience by on significant improvement')
+cmd:option('-patienceIncrease', 1.5, 'amount to multiply patience by on significant improvement')
 cmd:text()
 opt = cmd:parse(arg or {})
 
 torch.setdefaulttensortype('torch.FloatTensor')
 torch.setnumthreads(opt.threads)
 
-do -- data augmentation module
+do -- data augmentation module assume rgb for now
+   function vignette(img,darken_factor) --darken_factor roughly indicates how fast it fades. Higher = more fading
+       local nch = img:size(1)
+       local imh = img:size(2)
+       local imw = img:size(3)
+       local maxdist = math.sqrt(imh^2+imw^2)/2
+       for i = 1,imh do
+           for j = 1,imw do
+               local dist = math.sqrt((i-imh/2)^2 + (j-imw/2)^2)
+               img[{{},i,j}]:mul(math.max(0,1-darken_factor*dist/maxdist))
+           end
+       end
+   end
+
+   -- Contrast normalization based on hsv image data from http://papers.nips.cc/paper/5548-discriminative-unsupervised-feature-learning-with-convolutional-neural-networks.pdf
+   function contrastaugment_sv(img,s_factors,v_factors)
+       local hsv_img = image.rgb2hsv(img)
+       hsv_img[2]:pow(s_factors.s_pow):mul(s_factors.s_mul):add(s_factors.s_add)
+       hsv_img[3]:pow(v_factors.v_pow):mul(v_factors.v_mul):add(v_factors.v_add)
+       --Do inpace replace
+       img:set(image.hsv2rgb(hsv_img))
+   end
+
    local DataAugment,parent = torch.class('nn.DataAugment', 'nn.Module')
 
    function DataAugment:__init()
@@ -49,9 +75,52 @@ do -- data augmentation module
    function DataAugment:updateOutput(input)
       if self.train then
          local bs = input:size(1)
+         local imheight = input:size(3)
+         local imwidth = input:size(4)
          local flip_mask = torch.randperm(bs):le(bs/2)
-         for i=1,input:size(1) do
+         for i=1,bs do
             if flip_mask[i] == 1 then image.hflip(input[i], input[i]) end
+            --Before converting to gmimage scale range to 0-1 using minmax.. Will be rescaled back.
+            local im_min = input[i]:min()
+            local im_max = input[i]:max()
+            input[i] = image.minmax{tensor=input[i],min=im_min,max=im_max}
+            -- Perform color augmentation here as per http://arxiv.org/vc/arxiv/papers/1501/1501.02876v1.pdf
+            local rshift = torch.uniform(-20/255,20/255)
+            local gshift = torch.uniform(-20/255,20/255)
+            local bshift = torch.uniform(-20/255,20/255)
+            input[i][1]:add(rshift)
+            input[i][2]:add(gshift)
+            input[i][3]:add(bshift)
+            -- Perform contrast augmentation
+            local s_factors = {s_pow=torch.uniform(0.25,2),s_mul=torch.uniform(0.7,1.4),s_add=torch.uniform(-0.1,0.1)}
+            local v_factors = {v_pow=torch.uniform(0.25,2),v_mul=torch.uniform(0.7,1.4),v_add=torch.uniform(-0.1,0.1)}
+            contrastaugment_sv(input[i],s_factors,v_factors)
+            -- Use gmimage to do affine transforms
+            local gmimage = gm.Image(input[i],'RGB','DHW')
+            -- Detect edge average color to fill black regions after augmentation
+            local rmean = (input[{i,1,{},1}]:sum()+input[{i,1,1,{}}]:sum()+input[{i,1,{},imwidth}]:sum()+input[{i,1,imheight,{}}]:sum())/(2*(imheight+imwidth))
+            local gmean = (input[{i,2,{},1}]:sum()+input[{i,2,1,{}}]:sum()+input[{i,2,{},imwidth}]:sum()+input[{i,2,imheight,{}}]:sum())/(2*(imheight+imwidth))
+            local bmean = (input[{i,3,{},1}]:sum()+input[{i,3,1,{}}]:sum()+input[{i,3,{},imwidth}]:sum()+input[{i,3,imheight,{}}]:sum())/(2*(imheight+imwidth))
+            -- Rotation angle between -15 and 15 degrees
+            -- This parameter with the scaling constants/some extra constants can be used to introduce shear but not doing for now as I am unable to figure exact relation to shear angle
+            local theta = torch.rand(1):mul(math.pi/8):add(-math.pi/16)[1]
+            -- Translation parameters +/- 10 pixels
+            local tx = torch.random(-10,10)
+            local ty = torch.random(-10,10)
+            -- Scaling parameters 0.8-1.2 times. Also does strech when aspect ratio is lost
+            local sx = (((torch.rand(1)-0.5)*0.2)+1)[1]
+            local sy = (((torch.rand(1)-0.5)*0.2)+1)[1]
+            -- Set backgroundand perform affine transform
+            gmimage:setBackground(rmean,gmean,bmean):affineTransform(sx*math.cos(theta), sx*math.sin(theta), -sy*math.sin(theta), sy*math.cos(theta),tx,ty)
+            gmw,gmh = gmimage:size()
+            -- If image got bigger due to scaling/rotation we crop to keep image at same height and indicate loss of patches. Fill area if smaller.
+            -- Also have resize at end to avoid any discrepancy between odd even even sizes when adding border to fill area.
+            gmimage:crop(imwidth,imheight,(gmw-imwidth)/2,(gmh-imheight)/2):addBorder((imwidth-gmw)/2,(imheight-gmh)/2,rmean,gmean,bmean):size(imwidth,imheight)
+            input[i] = gmimage:toTensor('float','RGB','DHW')
+            --Once affine transform done do vignette.. No need to assign, does inplace
+            --vignette(input[i],torch.uniform(0,1.2))
+            -- Rescale range back to original
+            input[i]:mul(im_max-im_min):add(im_min)
          end
       end
       self.output:set(input)
@@ -86,6 +155,13 @@ thirdLayer.weight = torch.load(opt.thirdlayer).resized_kernels
 thirdLayerAccGradParams = thirdLayer.accGradParameters
 thirdLayer.accGradParameters = function() end
 
+fourthLayer = nn.SpatialConvolution(256, 256, 3,3, 1,1, 1,1)
+fourthLayer.bias:zero()
+fourthLayer.weight = torch.load(opt.fourthlayer).resized_kernels
+
+fourthLayerAccGradParams = fourthLayer.accGradParameters
+fourthLayer.accGradParameters = function() end
+
 model = nn.Sequential()
 model:add(nn.DataAugment():float())
 model:add(nn.Copy('torch.FloatTensor','torch.CudaTensor'):cuda())
@@ -110,15 +186,17 @@ parameters,gradParameters = model:getParameters()
 print '==> configuring optimizer'
 
 if opt.optimization == 'SGD' then
+   print('using SGD')
    optimState = {
       learningRate = opt.learningRate,
       weightDecay = opt.weightDecay,
       momentum = opt.momentum,
-      learningRateDecay = 1e-7
+      learningRateDecay = opt.learningRateDecay
    }
    optimMethod = optim.sgd
 
 elseif opt.optimization == 'ADAM' then
+   print('using ADAM')
    optimState = {
       learningRate = opt.learningRate,
       beta1 = opt.beta1,
@@ -154,6 +232,11 @@ function train()
    if epoch == opt.trainthird then
       print('turning on training for third layer')
       thirdLayer.accGradParameters = thirdLayerAccGradParams
+   end
+
+   if epoch == opt.trainfourth then
+      print('turning on training for fourth layer')
+      fourthLayer.accGradParameters = fourthLayerAccGradParams
    end
 
    -- drop learning rate every "epoch_step" epochs
@@ -224,6 +307,11 @@ print '==> defining test procedure'
 function test()
    -- local vars
    local time = sys.clock()
+
+   -- spend at least some epochs not testing
+   if epoch <= opt.notest+1 then
+      return 0.0
+   end
 
    -- set model to evaluate mode (for modules that differ in training and testing, like Dropout)
    model:evaluate()

@@ -3,6 +3,7 @@ require 'nn'      -- provides a normalization operator
 require 'cunn'
 require 'optim'
 require 'csvigo'
+require 'image'
 
 cmd = torch.CmdLine()
 cmd:text()
@@ -62,6 +63,8 @@ testData = {
      size = function() return testsize end
 }
 testData.data, testData.labels = parseDataLabel(raw_test.data, testsize, channel, height, width)
+testData.data = testData.data:float()
+testData.labels = testData.labels:float()
 
 --Normalize the test data as per parameters we have
 -- preprocess testSet
