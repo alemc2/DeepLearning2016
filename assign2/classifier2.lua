@@ -164,7 +164,7 @@ fourthLayer.accGradParameters = function() end
 
 model = nn.Sequential()
 model:add(nn.DataAugment():float())
---model:add(nn.Copy('torch.FloatTensor','torch.CudaTensor'):cuda())
+model:add(nn.Copy('torch.FloatTensor','torch.CudaTensor'):cuda())
 model:add(dofile('models/'..opt.model..'.lua'):cuda())
 
 criterion = nn.ClassNLLCriterion():cuda()
