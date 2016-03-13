@@ -319,19 +319,23 @@ function test()
    -- test over test data
    print('==> testing on test set:')
 
-   local bs = 25
-   for i=1,provider.valData.data:size(1),bs do
+   local bs = opt.batchSize
+   local allData = torch.cat(provider.valData.data, provider.testData.data, 1)
+   local allLabels = torch.cat(provider.valData.labels, provider.testData.labels, 1)
+   for i=1,allData:size(1),bs do
       -- disp progress
-      xlua.progress(i, provider.valData.size())
+      xlua.progress(math.ceil(i/bs), math.ceil(allData:size(1)/bs))
 
-      local inputs = provider.valData.data:narrow(1,i,bs):clone()
+      bsize = math.min(bs, allData:size(1)-i+1)
+
+      local inputs = allData:narrow(1,i,bsize)
       local outputs = model:forward(inputs)
-      confusion:batchAdd(outputs, provider.valData.labels:narrow(1,i,bs))
+      confusion:batchAdd(outputs, allLabels:narrow(1,i,bsize))
    end
 
    -- timing
    time = sys.clock() - time
-   time = time / provider.valData.size()
+   time = time / allData:size(1)
    print("\n==> time to test 1 sample = " .. (time*1000) .. 'ms')
 
    -- print confusion matrix
