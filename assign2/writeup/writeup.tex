@@ -224,8 +224,42 @@ And similar to above, we get:
 
 \item[1.2] \textbf{Batch Normalization}
 \ifnum\me<2
-\begin{solution}\\
-TODO
+\begin{solution}
+\\For this problem we are going to consider the notation used in the paper as the question is ill-formed.
+That is we are given the function 
+\begin{align*}
+y^{(k)} &= \frac{x^{(k)} - E(x^{(k)})}{\sqrt{(\sigma(x^{(k)}))^2}}
+\end{align*}
+where $k$ is a dimension of the $d$ dimensional input and we take these mean and variance along the batch inputs on those dimensions. Now assuming the mini-batch size to be $m$, that is we have $m$ samples, we get the following along a particular dimension:
+\begin{align*}
+y_i &= \frac{x_i-E(x_i)}{\sqrt{(\sigma(x_i))^2}}
+\end{align*}
+where $i$ ranges from $1 \ldots m$. This is the same across all the dimensions and the normalization of each dimension is independent of the other. Then we can write the gradient of the energy function wrt. $x^{(k)}_i$ as follows:
+\begin{equation}
+\frac{\partial E}{\partial x^{(k)}_i} = \sum_{j=1}^m \frac{\partial E}{\partial y^{(k)}_j} \cdot \frac{\partial y^{(k)}_j}{\partial x^{(k)}_i}
+\label{eq1}
+\end{equation}
+Dropping the superscripts for convenience (we will later get it back by showing it as vector elements), we see the following:
+\begin{equation}
+\frac{\partial y_j}{\partial x_i} =
+\begin{cases}
+-\frac{1}{m\sigma} - \frac{(x_j-E(x)) (x_i-E(x))}{m\sigma^3} & j \neq i\\
+(1-\frac{1}{m})\cdot \frac{1}{\sigma} - \frac{(x_i-E(x))^2}{m\sigma^3} & j = i
+\end{cases}
+\label{eq2}
+\end{equation}
+The above is arrived at by differentiation by parts and using the fact that $(\sigma(x))^2 = E(x^2) - E(x)^2$. Putting back the superscripts we get:
+\begin{equation}
+\frac{\partial E}{\partial x^{(k)}} =
+\begin{bmatrix}
+\frac{\partial E}{\partial x^{(1)}_1} & \frac{\partial E}{\partial x^{(1)}_2} & \cdots & \frac{\partial E}{\partial x^{(1)}_m}\\\\
+\frac{\partial E}{\partial x^{(2)}_1} & \frac{\partial E}{\partial x^{(2)}_2} & \cdots & \frac{\partial E}{\partial x^{(2)}_m}\\\\
+\cdots & \cdots & \cdots & \cdots \\\\
+\frac{\partial E}{\partial x^{(d)}_1} & \frac{\partial E}{\partial x^{(d)}_2} & \cdots & \frac{\partial E}{\partial x^{(d)}_m}
+\end{bmatrix}
+\label{eq3}
+\end{equation}
+Substituting results from (\ref{eq1}),(\ref{eq2}) in (\ref{eq3}), we get what the question asks.
 \end{solution}
 \fi
 
