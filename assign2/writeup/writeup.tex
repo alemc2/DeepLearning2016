@@ -223,9 +223,11 @@ And similar to above, we get:
 
 
 \item[1.2] \textbf{Batch Normalization}
+\begin{enumerate}
+\item[1.2.1] Given $\frac{\partial E}{\partial y_k}$ write down $\frac{\partial E}{\partial x_k}$, where E is the energy function.
 \ifnum\me<2
 \begin{solution}
-\\For this problem we are going to consider the notation used in the paper as the question is ill-formed.
+\\For this problem we are going to consider the notation used in the paper \cite{BN} as the question is ill-formed.
 That is we are given the function 
 \begin{align*}
 y^{(k)} &= \frac{x^{(k)} - E(x^{(k)})}{\sqrt{(\sigma(x^{(k)}))^2}}
@@ -263,8 +265,60 @@ Substituting results from (\ref{eq1}),(\ref{eq2}) in (\ref{eq3}), we get what th
 \end{solution}
 \fi
 
+\item[1.2.2] Can you derive
+a way to incorporate a learnable shift variable into the current formula? Let’s assume
+the considered variable is denoted by $\epsilon$. Please write down the forward and backward
+pass, and derive $\frac{\partial E}{\partial \epsilon}$
 
+\ifnum\me<2
+\begin{solution}
+\\We can do this by changing the batch normalization function as follows:
+$$y^{(k)} = \frac{x^{(k)} - E(x^{(k)})}{\sqrt{(\sigma(x^{(k)}))^2}} + \epsilon^{(k)}$$
+That is we introduce a learnable shift to our normalization. With that the gradient is simply computed as:
+$$\frac{\partial E}{\partial \epsilon^{(k)}} =
+\begin{bmatrix}
+\frac{\partial E}{\partial y^{(k)}_1} & \frac{\partial E}{\partial y^{(k)}_2} & \cdots & \frac{\partial E}{\partial y^{(k)}_m}
+\end{bmatrix}
+\cdot
+\begin{bmatrix}
+1 \\ 1 \\ \cdots \\ 1
+\end{bmatrix}
+= \sum_{i=1}^{m} \frac{\partial E}{\partial y^{(k)}_i}
+$$
+Thus we can write the required gradient in the form
+$$\frac{\partial E}{\partial \epsilon} =
+\begin{bmatrix}
+\sum_{i=1}^{m} \frac{\partial E}{\partial y^{(1)}_i}\\
+\sum_{i=1}^{m} \frac{\partial E}{\partial y^{(2)}_i}\\
+\cdots\\
+\sum_{i=1}^{m} \frac{\partial E}{\partial y^{(d)}_i}
+\end{bmatrix}$$
+\end{solution}
+\fi
 \end{enumerate}
+\end{enumerate}
+
+\newproblem{STL-10: semi-supervised image recognition}
+\ifnum\me<2
+\begin{solution}
+\\We performed our experiments on the STL-10 dataset \cite{coates2011analysis} to classify real world images into 10 classes: airplane, bird, car, cat, deer, dog, horse, monkey, ship, truck.
+\\Since STL-10 is a dataset with a much larger corpus of unlabeled data, we used ideas from \cite{conv_kmeans} to pre-train first 4 layers of our network using the unsupervised data. We also use various augmentations and a multi-scale architecture to generalize better. More details are presented below:
+\begin{enumerate}
+\item Overview of the network
+\begin{itemize}
+\item Dataset, partitioning and pre-processing:
+\\STL-10 dataset has 10 classes with 500 training images per class and 800 test images per class. We had a set of 100 images per class split off from the training images which was used for validation. We thus had 4000 training images, 1000 validation images and 8000 testing images. Besides these labeled data we also have 100,000 unlabeled samples.
+\\The loaded training data is converted to YUV colorspace. Spatial contrast normalization is applied to Y component of each image and global normalization to have zero mean and unit variance is performed on the U,V channels. The parameters
+used for this normalization are stored and used to normalize the validation and test set as well.
+\\The images are converted back to RGB before being passed through our model as the pretraining (which is described later) is done using RGB images.
+
+\item Model:
+The model we use to train this network is 
+
+\end{itemize}
+\end{enumerate}
+\end{solution}
+\fi
 
 
 \printbibliography
