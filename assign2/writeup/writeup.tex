@@ -299,15 +299,15 @@ $$\frac{\partial E}{\partial \epsilon} =
 \ifnum\me<2
 \begin{solution}
 \\We performed our experiments on the STL-10 dataset \cite{coates2011analysis} to classify real world images into 10 classes: airplane, bird, car, cat, deer, dog, horse, monkey, ship, truck.
-\\Since STL-10 is a dataset with a much larger corpus of unlabeled data, we used ideas from \cite{conv_kmeans} to pre-train first 4 layers of our network using the unlabeled data. We also use various augmentations and a multi-scale architecture to generalize better. More details are presented below:
+\\Since STL-10 is a dataset with a much larger corpus of unlabeled data, we used ideas from \cite{conv_kmeans} to pre-train the first 4 layers of our network using unlabeled data. We also use various augmentations and a multi-scale architecture to generalize better. More details are presented further.
 \begin{enumerate}
 \item \textbf{Overview of the network}
 \begin{itemize}
 \item \textbf{Dataset, partitioning and pre-processing:}
-STL-10 dataset has 10 classes with 500 training images per class and 800 test images per class. We had a set of 100 images per class split off from the training images which was used for validation. We thus had 4000 training images, 1000 validation images and 8000 testing images. Besides these labeled data we also have 100,000 unlabeled samples.
+The STL-10 dataset has 10 classes with 500 training images per class and 800 test images per class. We had a set of 100 images per class split off from the training images which was used for validation. We thus had 4000 training images, 1000 validation images and 8000 testing images. Additionally, we also have 100,000 unlabeled samples.
 \\The loaded training data is converted to YUV colorspace. Spatial contrast normalization is applied to Y component of each image and global normalization to have zero mean and unit variance is performed on the U,V channels. The parameters
 used for this normalization are stored and used to normalize the validation and test set as well.
-\\The images are converted back to RGB before being passed through our model as the pretraining (which is described later) is done using RGB images.
+\\The images are converted back to RGB before being passed through our model as the pre-training (which is described later) is done using RGB images.
 
 \item \textbf{Model:}
 We use a deep convolutional neural network that takes as input a 96x96 image, produces three scalings of sizes 96x96, 64x64 and 32x32, and passes them through three parallel sets of convolutional layers, with the first few layers pre-learnt through convolutional clustering. The outputs of the three subnetworks are gathered as probability distributions over the output classes, and a weighted average (with learnt weights per class) is taken to produce the overall output of the network through a final logsoftmax operation. We use the negative log-likelihood criterion to compute the classification loss for our network. The model is illustrated in Figure~\ref{model}.\\
@@ -320,19 +320,19 @@ We make use of dropout at various stages as described in the figure for regulari
 \end{figure}
 
 \item \textbf{Using the unlabeled data:}
-We applied convolutional clustering (\cite{conv_kmeans}) to pre-train the first four layers of the 96x96 subnetwork of our model. For this clustering strategy, we use k-means to cluster patches of images in a 3x3 image space. Since we use 3x3 convolutional filters in our model, we extract random windows of 6x6 from the unlabeled data, and take all the 3x3 patches of this window in a sliding window fashion for clustering. The 3x3 patch that most correlates to one of the centroids is taken as a representative for that window. The clustering is performed on these  selected representatives from each window. By performing convolutional clustering, we avoid redundant centroids that are just shifted versions of each other.\\
-To cluster higher levels of the network, we fix the previous pre-trained levels and pass the unlabeled data as input, and collect the feature maps produced at the level we want to pre-train. We then do convolutional clustering on these feature maps to find the centroids to use as pre-trained convolutional filters in the network.
+We applied convolutional clustering (\cite{conv_kmeans}) to pre-train the first four layers of the 96x96 subnetwork of our model. Our clustering involves using k-means to cluster patches of images in a 3x3 image space. Since we use 3x3 convolutional filters in our model, we extract random windows of 6x6 from the unlabeled data, and take all the 3x3 patches of this window in a sliding window fashion. The 3x3 patch that most correlates to one of the centroids is taken as a representative for that window. The clustering is performed on these  selected representatives from each window. By performing convolutional clustering, we avoid redundant centroids that are just shifted versions of each other.\\
+To cluster higher levels of the network, we fix the previous pre-trained levels and pass the unlabeled data as input, and collect the feature maps produced at the level we want to pre-train. We then do convolutional clustering on these feature maps to find the centroids to use as pre-trained convolutional filters at that level.
 
 \item \textbf{Augmentations:}
-We perform various data augmentations in order to generalize the network to learn important features invariant of the object classes. These augmentations have been tried and tested in works such as \cite{exemplar} \cite{baidu}. The various augmentations we perform are:
+We perform various data augmentations in order to generalize the network to learn important features invariant of the object classes. These augmentations have been tried and tested in works such as \cite{exemplar} \cite{baidu}. The various augmentations we perform (with randomized parameters) are:
 \begin{enumerate}
-\item Translation: Vertical and horizontal translation by -15 to +15 pixels.
+\item Translation: Vertical and horizontal translation by $-15$ to $15$ pixels.
 \item Scaling, Stretching: Scaling height and width independently by 0.75 to 1.25 times.
-\item Rotation: Rotation of the image by an angle of -18 to 18 degrees.
+\item Rotation: Rotation of the image by an angle of $-18$ to $18$ degrees.
 \item Contrast Shifting: raise saturation and value (S and V components of the HSV color representation)
 of all pixels to a power between 0.25 and 2 (same for all pixels within a patch), multiply
-these values by a factor between 0.7 and 1.4, add to them a value between −0.1 and 0.1 as done in \cite{exemplar}
-\item Color Shifting: Altering R,G,B channels independently by -30 to +30 as done in \cite{baidu}
+these values by a factor between 0.7 and 1.4, add to them a value between $-0.1$ and $0.1$ as done in \cite{exemplar}
+\item Color Shifting: Altering R,G,B channels independently by $-30$ to $30$ as done in \cite{baidu}
 \end{enumerate}
 We also fill the black spaces created by these transforms (if any) by the mean color at the edges to avoid abrupt color transition. Some of these random transformations applied to a single image are shown below (the combined random transform is applied 50 times to possibly see all the above transforms).
 \begin{figure}[H]
@@ -355,7 +355,7 @@ We also fill the black spaces created by these transforms (if any) by the mean c
 \end{itemize}
 
 \item \textbf{Visualizations:}
-\\We try to visualize some of the layers and activations to see how our network has trained. Some of them are shown below:
+\\We visualize the first layer filters and learnt representations of our network below.
 \begin{itemize}
 \item \textbf{First layer filters learnt through clustering:}
 \\The 3x3 filers learnt for the first layer by clustering on unlabeled data is shown below.
@@ -380,7 +380,7 @@ We also fill the black spaces created by these transforms (if any) by the mean c
 The above filters are actually 3x3 in size but are enlarged and enhanced for better display. This might cause it to look a little saturated and diffused at places than what it actually was. As we can see form this figure the learned filters are detecting some prominent edges just as we had expected. Another point to note is that since we are doing convolutional K-means clustering as described in \cite{conv_kmeans} we have avoided generating similar (shifted) filters.
 
 \item \textbf{t-SNE:}
-\\We used t-SNE \cite{tsne} to cluster the representation learnt by our network on the second-last layer. It did cluster quite well with meaningful groups and neighbours indicating that the representations learnt by our network are quite well in line with the expected classes. Figure (\ref{tsne}) shows images mapped onto their t-SNE points. We see quite well defined behaviour, the classes are mostly grouped distinctly with little confusion between classes such as dogs and cats, planes and birds, horses and deer etc. Although it may be hard to notice such small details in this zoomed out image, upon zooming in you can see clusters of the following in clockwise order from the bottom: airplanes, ships, trucks, cars, horses, deer, birds, monkeys, dogs, cats. We can also see that the non-living objects on the left are separated from the living objects on the right which is quite interesting. Some of these patches are zoomed and displayed in Fig (\ref{patches}).
+\\We used t-SNE \cite{tsne} to cluster the representation learnt by our network on the second-last layer. It did cluster quite well with meaningful groups and neighbors indicating that the representations learnt by our network are well in line with the expected classes. Figure~\ref{tsne} shows images mapped onto their t-SNE points. We observe some well defined behavior: the classes are mostly grouped distinctly with a little confusion between classes such as dogs and cats, planes and birds, horses and deer etc. Although it may be hard to notice such minute details in this zoomed out image, upon zooming in you can see clusters of the following in clockwise order from the bottom: airplanes, ships, trucks, cars, horses, deer, birds, monkeys, dogs, cats. We can also see that the non-living objects on the left are separated from the living objects on the right which is quite interesting. Some of these patches are zoomed and displayed in Figure~\ref{patches}.
 \begin{figure}[H]
 \centering
 \includegraphics[keepaspectratio,width=0.6\paperwidth]{tsne_256.png}
@@ -403,9 +403,9 @@ The above filters are actually 3x3 in size but are enlarged and enhanced for bet
 \end{figure}
 \end{itemize}
 \item \textbf{Experiments and Observations:}
-\\We tried experimenting with various architectures, regularizations etc. while trying to make the best use of the unlabeled data. In our efforts to strike a balance between accuracy, speed, memory, complexity, generality etc. we decided to go for the model described above.
-\\We started with the 2 layer convolutional kmeans filers model described in \cite{conv_kmeans} and saw how such a simple model could utilize the filters learnt from unlabeled data to make good predictions. However we noticed that although it was performing well for such a simple network, a more complex network could do better with supervised data alone and hence we decided to go with a more complex network making use of the unlabeled data by pre-training them using the convolutional K-means algorithm.
-\\We also experimented with larger convolution windows, pooling etc. Finally we also introduced data augmentations to generalize the model. Some of the results of our experiments are shown below.
+\\We tried experimenting with various architectures, regularizations, etc. while trying to make the best use of the unlabeled data. In our efforts to strike a balance between accuracy, speed, memory, complexity, generality etc. we decided to go for the model described above.
+\\We started with the 2 layer convolutional k-means filers model described in \cite{conv_kmeans} and saw how such a simple model could utilize the filters learnt from unlabeled data to make good predictions. However, we noticed that although it was performing well for such a simple network, a more complex network could do better with supervised data alone and hence we decided to go with a more complex network making use of the unlabeled data by pre-training them using the convolutional k-means algorithm.
+\\We also experimented with larger convolution windows, pooling sizes, number of layers, etc. Finally we also introduced data augmentations to generalize the model. Some of the results of our experiments are shown below.
 \begin{table}[h]
 \centering
 \begin{tabular}{| l | l |}
@@ -423,7 +423,7 @@ Deep network similar to a single level of our final model in supervised fashion 
 \end{table}
 
 \item \textbf{Results:}
-\\Using the pre-training obtained from the 100,000 unlabeled data, our model was able to train on the training set of 4000 images and was validated on the test set of size of 8000 images to obtain a test accuracy of 75.2\%. This is the model we submitted to Kaggle.
+\\Using the pre-training obtained from the 100,000 unlabeled data points, our model was able to train on the training set of 4000 images and was validated on the test set of 8000 images to obtain a test accuracy of 75.2\%. This is the model we submitted to Kaggle.
 \end{enumerate}
 \end{solution}
 \fi
