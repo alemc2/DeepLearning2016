@@ -228,13 +228,13 @@ And similar to above, we get:
 \ifnum\me<2
 \begin{solution}
 \\For this problem we are going to consider the notation used in the paper \cite{BN} as the question is ill-formed.
-That is we are given the function 
+That is, we are given the function 
 \begin{align*}
 y^{(k)} &= \frac{x^{(k)} - E(x^{(k)})}{\sqrt{(\sigma(x^{(k)}))^2}}
 \end{align*}
 where $k$ is a dimension of the $d$ dimensional input and we take these mean and variance along the batch inputs on those dimensions. Now assuming the mini-batch size to be $m$, that is we have $m$ samples, we get the following along a particular dimension:
 \begin{align*}
-y_i &= \frac{x_i-E(x_i)}{\sqrt{(\sigma(x_i))^2}}
+y_i &= \frac{x_i-E(x)}{\sqrt{(\sigma(x))^2}}
 \end{align*}
 where $i$ ranges from $1 \ldots m$. This is the same across all the dimensions and the normalization of each dimension is independent of the other. Then we can write the gradient of the energy function wrt. $x^{(k)}_i$ as follows:
 \begin{equation}
@@ -245,8 +245,8 @@ Dropping the superscripts for convenience (we will later get it back by showing 
 \begin{equation}
 \frac{\partial y_j}{\partial x_i} =
 \begin{cases}
--\frac{1}{m\sigma} - \frac{(x_j-E(x)) (x_i-E(x))}{m\sigma^3} & j \neq i\\
-(1-\frac{1}{m})\cdot \frac{1}{\sigma} - \frac{(x_i-E(x))^2}{m\sigma^3} & j = i
+-\frac{1}{m\sigma(x)} - \frac{(x_j-E(x)) (x_i-E(x))}{m\sigma(x)^3} & \text{if } j \neq i\\
+(1-\frac{1}{m})\cdot \frac{1}{\sigma(x)} - \frac{(x_i-E(x))^2}{m\sigma(x)^3} & \text{if } j = i
 \end{cases}
 \label{eq2}
 \end{equation}
@@ -254,10 +254,7 @@ The above is arrived at by differentiation by parts and using the fact that $(\s
 \begin{equation}
 \frac{\partial E}{\partial x^{(k)}} =
 \begin{bmatrix}
-\frac{\partial E}{\partial x^{(1)}_1} & \frac{\partial E}{\partial x^{(1)}_2} & \cdots & \frac{\partial E}{\partial x^{(1)}_m}\\\\
-\frac{\partial E}{\partial x^{(2)}_1} & \frac{\partial E}{\partial x^{(2)}_2} & \cdots & \frac{\partial E}{\partial x^{(2)}_m}\\\\
-\cdots & \cdots & \cdots & \cdots \\\\
-\frac{\partial E}{\partial x^{(d)}_1} & \frac{\partial E}{\partial x^{(d)}_2} & \cdots & \frac{\partial E}{\partial x^{(d)}_m}
+\frac{\partial E}{\partial x^{(k)}_1} & \frac{\partial E}{\partial x^{(k)}_2} & \cdots & \frac{\partial E}{\partial x^{(k)}_m}
 \end{bmatrix}
 \label{eq3}
 \end{equation}
@@ -313,7 +310,18 @@ used for this normalization are stored and used to normalize the validation and 
 \\The images are converted back to RGB before being passed through our model as the pretraining (which is described later) is done using RGB images.
 
 \item Model:
-The model we use to train this network is 
+We use a deep convolutional neural network that takes as input a 96x96 image, produces three scalings of sizes 96x96, 64x64 and 32x32, and passes them through three parallel sets of convolutional layers, with the first few layers pre-learnt through convolutional clustering. The outputs of the three subnetworks are gathered as probability distributions over the output classes, and a weighted average (with learnt weights per class) is taken to produce the overall output of the network through a final logsoftmax operation. We use the negative log-likelihood criterion to compute the classification loss for our network. The model is illustrated in Figure~\ref{fig:model}.\\
+We make use of dropout at various stages as described in the figure for regularization. We also make use of Batch Normalization to reduce the effect of internal covariate shift as described in \cite{BN}. This also helps in further regularization, faster training times and helps in appropriately scaling and shifting the feature maps produced by the pre-trained layers. This is important since the layers are not learnt by the classifier but instead clustered independently of it.
+
+\begin{figure}
+\label{fig:model}
+\includegraphics[scale=0.6]{network}
+\caption{Our model architecture.}
+\end{figure}
+
+\item Using the unlabeled data:
+We applied convolutional clustering (\cite{conv_kmeans}) to pre-train the first four layers of the 96x96 subnetwork of our model. For this clustering strategy, we use k-means to cluster patches of images in a 3x3 image space. Since we use 3x3 convolutional filters in our model, we extract random windows of 6x6 from the unlabeled data, and take all the 3x3 patches of this window in a sliding window fashion for clustering. The 3x3 patch that most correlates to one of the centroids is taken as a representative of that window. By performing such a convolutional clustering, we avoid redundant centroids that are just shifted versions of each other.\\
+To cluster higher levels of the network, we fix the previous prelearnt levels and pass the unlabeled data as input, and collect the feature maps produced at the level we want to pre-train. We then do convolutional clustering on these feature maps to find the centroids to use as pre-trained convolutional filters in the network.
 
 \end{itemize}
 \end{enumerate}
