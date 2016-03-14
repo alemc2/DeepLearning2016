@@ -56,7 +56,7 @@ I assume you know how to print .ps files (``lpr -Pprinter ps#.ps'')
 \setlength{\textheight}{8.5in}
 
 \addbibresource{bibliography.bib}
-\graphicspath{ {mnist/mistakeims/} }
+\graphicspath{ {../images/} }
 
 \newcommand{\handout}[5]{
    \renewcommand{\thepage}{#1, Page \arabic{page}}
@@ -314,8 +314,73 @@ used for this normalization are stored and used to normalize the validation and 
 
 \item Model:
 The model we use to train this network is 
+%Talk about each level structure
+
+%Talk about 3 scale levels
+
+%Talk about how they are weighed and mean
+
+\item Augmentations:
+We perform various data augmentations in order to generalize the network to learn important features invariant of the object classes. These augmentations have been tried and tested in works such as \cite{exemplar} \cite{baidu}. The various augmentations we perform are:
+\begin{enumerate}
+\item Translation: Vertical and horizontal translation by -15 to +15 pixels.
+\item Scaling, Stretching: Scaling height and width independently by 0.75 to 1.25 times.
+\item Rotation: Rotation of the image by an angle of -18 to 18 degrees.
+\item Contrast Shifting: raise saturation and value (S and V components of the HSV color representation)
+of all pixels to a power between 0.25 and 2 (same for all pixels within a patch), multiply
+these values by a factor between 0.7 and 1.4, add to them a value between −0.1 and 0.1 as done in \cite{exemplar}
+\item Color Shifting: Altering R,G,B channels independently by -30 to +30 as done in \cite{baidu}
+\end{enumerate}
+We also fill the black spaces created by these transforms (if any) by the mean color at the edges to avoid abrupt color transition. Some of these random transformations applied to a single image are shown below (the combined random transform is applied 50 times to possibly see all the above transforms).
+\begin{figure}[H]
+\centering
+\foreach \x in {1,...,51}
+{
+	\includegraphics[scale=0.2]{lizard\x.png}
+	\ifnum\x=17
+	\\
+	\fi
+	\ifnum\x=34
+	\\
+	\fi
+}
+\\
+\caption{Random transforms applied 50 times to this image to view all possible transforms. First image is the original image.}
+\end{figure}
+
 
 \end{itemize}
+
+\item Visualizations:
+We try to visualize some of the layers and activations to see how our network has trained. Some of them are shown below:
+\begin{itemize}
+\item First layer filters learnt through clustering:
+\\The 3x3 filers learnt for the first layer by clustering on unlabeled data is shown below.
+\begin{figure}[H]
+\centering
+\foreach \x in {1,...,64}
+{
+	\includegraphics[scale=0.5]{filter\x.png}
+	\ifnum\x=16
+	\\
+	\fi
+	\ifnum\x=32
+	\\
+	\fi
+	\ifnum\x=48
+	\\
+	\fi
+}
+\\
+\caption{Filters created by clustering on unsupervised data. These are actually 3x3 filters which are enlarged and enhanced for better display}
+\end{figure}
+The above filters are actually 3x3 in size but are enlarged and enhanced for better display. This might cause it to look a little saturated and diffused at places than what it actually was. As we can see form this figure the learned filters are detecting some prominent edges just as we had expected. Another point to note is that since we are doing convolutional K-means clustering as described in \cite{conv_kmeans} we have avoided generating similar filters.
+
+\item t-SNE:
+\\We used t-SNE to cluster the representation learnt by our network on the second last layer. It did cluster quite well with meaningful groups and neighbours indicating that the representations learnt by our network are quite well in line with the expected classes.
+\end{itemize}
+\item Experiments and Observations:
+
 \end{enumerate}
 \end{solution}
 \fi
