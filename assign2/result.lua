@@ -8,7 +8,7 @@ require 'image'
 cmd = torch.CmdLine()
 cmd:text()
 cmd:text('Options:')
-cmd:option('-model', 'models/best.net', 'input model')
+cmd:option('-model', 'model.net.2', 'input model')
 cmd:option('-testfile', 'stl-10/test.t7b', 'test file')
 cmd:text()
 opt = cmd:parse(arg or {})
@@ -75,7 +75,7 @@ do -- data augmentation module blank module
 end
 
 print ('==> loading best model')
-modelObj = torch.load(opt.model) -- TODO change for final submission
+modelObj = torch.load(opt.model)
 
 model = modelObj.model
 local means = modelObj.means
